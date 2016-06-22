@@ -590,7 +590,7 @@ trait DeploymentSlicer extends DeploymentOperation {
           blueprint.clusters.find(_.name == cluster.name).map { bpc ⇒
 
             bpc.services.foreach { service ⇒
-              if (!validateOnly) resetServiceArtifacts(stable, bpc, service)
+              if (!validateOnly) resetServiceArtifacts(stable, bpc, service, Undeploy)
             }
 
             val services = cluster.services.map { service ⇒

@@ -39,6 +39,7 @@ class DeploymentSynchronizationActor extends ArtifactPaginationSupport with Comm
 
   def receive: Receive = {
     case SynchronizeAll       ⇒ synchronize()
+    case s: Synchronize       ⇒ synchronize(s.deployment)
     case cs: ContainerService ⇒ synchronize(cs)
     case _                    ⇒
   }
@@ -51,6 +52,12 @@ class DeploymentSynchronizationActor extends ArtifactPaginationSupport with Comm
       }
       actorFor[ContainerDriverActor] ! ContainerDriverActor.Get(deploymentServices)
     }
+  }
+
+  private def synchronize(deployment: Deployment) = {
+    implicit val timeout = PersistenceActor.timeout
+    val deploymentServices = List(DeploymentServices(deployment, deployment.clusters.flatMap(_.services)))
+    actorFor[ContainerDriverActor] ! ContainerDriverActor.Get(deploymentServices)
   }
 
   private def synchronize(containerService: ContainerService): Unit = {
