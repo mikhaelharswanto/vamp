@@ -70,6 +70,7 @@ trait YamlReader[T] extends ModelNotificationProvider with NameValidator {
 
       val source = convert(yaml.load(reader)) match {
         case map: collection.Map[_, _] ⇒ YamlSourceReader(map.toMap.asInstanceOf[Map[String, _]])
+        case list: List[mutable.LinkedHashMap[String, _]] if list.size == 1 ⇒ YamlSourceReader(list.head.toMap.asInstanceOf[Map[String, _]])
         case any                       ⇒ any
       }
 

@@ -20,6 +20,10 @@ import scala.concurrent.{ Await, Future }
 import scala.language.{ implicitConversions, postfixOps }
 import scala.util.{ Failure, Success }
 
+object CLIDeploymentReader extends AbstractDeploymentReader {
+  protected def routingReader: GatewayMappingReader[Gateway] = new InnerGatewayReader(acceptPort = true, onlyAnonymous = false)
+}
+
 object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiContentTypes with CommandLineBasics with IoUtils {
 
   val timeout = 30 seconds
@@ -207,7 +211,7 @@ object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiCont
 
   def getDeployments(implicit vampHost: String): List[Deployment] =
     sendAndWaitYaml(s"GET $vampHost/api/v1/deployments") match {
-      case Some(deployments) ⇒ yamArrayListToList(deployments).map(a ⇒ DeploymentReader.read(a))
+      case Some(deployments) ⇒ yamArrayListToList(deployments).map(a ⇒ CLIDeploymentReader.read(a))
       case None              ⇒ List.empty
     }
 
@@ -248,10 +252,10 @@ object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiCont
     }
 
   def deploy(definition: String)(implicit vampHost: String): Option[Deployment] =
-    sendAndWaitYaml(s"POST $vampHost/api/v1/deployments", body = Some(definition)).map(DeploymentReader.read(_))
+    sendAndWaitYaml(s"POST $vampHost/api/v1/deployments", body = Some(definition)).map(CLIDeploymentReader.read(_))
 
   def updateDeployment(deploymentId: String, definition: String)(implicit vampHost: String): Option[Deployment] =
-    sendAndWaitYaml(s"PUT $vampHost/api/v1/deployments/$deploymentId", body = Some(definition)).map(DeploymentReader.read(_))
+    sendAndWaitYaml(s"PUT $vampHost/api/v1/deployments/$deploymentId", body = Some(definition)).map(CLIDeploymentReader.read(_))
 
   def getBreed(name: String)(implicit vampHost: String): Option[Breed] =
     sendAndWaitYaml(s"GET $vampHost/api/v1/breeds/$name").map(BreedReader.read(_))
@@ -263,7 +267,7 @@ object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiCont
     sendAndWaitYaml(s"GET $vampHost/api/v1/gateways/$gatewayId").map(GatewayReader.read(_))
 
   def getDeployment(name: String)(implicit vampHost: String): Option[Deployment] =
-    sendAndWaitYaml(s"GET $vampHost/api/v1/deployments/$name").map(DeploymentReader.read(_))
+    sendAndWaitYaml(s"GET $vampHost/api/v1/deployments/$name").map(CLIDeploymentReader.read(_))
 
   def getEscalation(name: String)(implicit vampHost: String): Option[Escalation] =
     sendAndWaitYaml(s"GET $vampHost/api/v1/escalations/$name").map(EscalationReader.read(_))
