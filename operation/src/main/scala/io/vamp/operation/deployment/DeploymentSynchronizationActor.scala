@@ -3,20 +3,22 @@ package io.vamp.operation.deployment
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 
-import akka.actor.{ ActorRef, Props }
+import akka.actor.{ActorRef, Props}
 import io.vamp.common.akka.IoC._
 import io.vamp.common.akka._
 import io.vamp.common.config.Config
 import io.vamp.container_driver.ContainerDriverActor.DeploymentServices
-import io.vamp.container_driver.{ ContainerDriverActor, ContainerService }
+import io.vamp.container_driver.{ContainerDriverActor, ContainerService}
 import io.vamp.model.artifact.DeploymentService.State.Intention
 import io.vamp.model.artifact.DeploymentService.State.Step._
 import io.vamp.model.artifact.DeploymentService._
 import io.vamp.model.artifact._
 import io.vamp.model.resolver.DeploymentTraitResolver
 import io.vamp.operation.deployment.DeploymentSynchronizationActor.SynchronizeAll
-import io.vamp.operation.notification.{ DeploymentServiceError, OperationNotificationProvider }
-import io.vamp.persistence.db.{ ArtifactPaginationSupport, PersistenceActor }
+import io.vamp.operation.notification.{DeploymentTimeoutError, OperationNotificationProvider}
+import io.vamp.persistence.db.{ArtifactPaginationSupport, PersistenceActor}
+import io.vamp.persistence.operation.DeploymentPersistence._
+import io.vamp.persistence.operation.DeploymentServiceState
 
 import scala.language.postfixOps
 
@@ -78,11 +80,13 @@ class DeploymentSynchronizationActor extends ArtifactPaginationSupport with Comm
     lazy val undeploymentTimeout = config.duration("ready-for-undeployment")
 
     def handleTimeout(service: DeploymentService) = {
-      val notification = DeploymentServiceError(deployment, service)
+      val notification = DeploymentTimeoutError(deployment, service)
       reportException(notification)
       actorFor[PersistenceActor] ! PersistenceActor.Update(deployment.copy(clusters = deployment.clusters.map(cluster ⇒ cluster.copy(services = cluster.services.map({ s ⇒
         if (s.breed.name == service.breed.name) {
-          s.copy(state = State(s.state.intention, Failure(notification)))
+          val updated = s.copy(state = State(s.state.intention, Failure(notification)))
+          actorFor[PersistenceActor] ! PersistenceActor.Update(DeploymentServiceState(serviceArtifactName(deployment, cluster, updated), updated.state))
+          updated
         } else s
       })))))
       true

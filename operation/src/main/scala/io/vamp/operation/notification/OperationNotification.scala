@@ -20,7 +20,7 @@ case class UnsupportedSlaType(`type`: String) extends Notification
 
 case class UnsupportedEscalationType(`type`: String) extends Notification
 
-case class DeploymentServiceError(deployment: Deployment, service: DeploymentService) extends Notification
+case class DeploymentTimeoutError(deployment: Deployment, service: DeploymentService) extends Notification
 
 case class UnsupportedRouteWeight(deployment: Deployment, cluster: DeploymentCluster, weight: Int) extends Notification
 
