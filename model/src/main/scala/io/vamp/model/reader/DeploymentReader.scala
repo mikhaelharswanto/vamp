@@ -27,7 +27,7 @@ trait AbstractDeploymentReader extends YamlReader[Deployment] with TraitReader w
       } toList
     }
 
-    Deployment(name, clusters, BlueprintGatewayReader.mapping("gateways"), ports(addGroup = true), environmentVariables, hosts())
+    Deployment(name, clusters, routingReader.mapping("gateways"), ports(addGroup = true), environmentVariables, hosts())
   }
 
   override protected def validate(deployment: Deployment): Deployment = {
