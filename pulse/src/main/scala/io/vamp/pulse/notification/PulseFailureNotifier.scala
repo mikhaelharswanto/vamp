@@ -21,7 +21,7 @@ trait PulseFailureNotifier {
   }
 
   protected def failureNotificationEvent(failure: Any): Event = {
-    val event = Event(Set("info", s"$typeName${Event.tagDelimiter}ERROR"), failure match {
+    val event = Event(Set("info", s"$typeName${Event.tagDelimiter}ERROR"), content = failure match {
       case e: Exception ⇒ if (e.getCause != null) e.getCause.getClass.getSimpleName else e.getClass.getSimpleName
       case _            ⇒ ""
     })

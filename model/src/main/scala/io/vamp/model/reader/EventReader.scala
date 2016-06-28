@@ -19,8 +19,14 @@ object EventReader extends YamlReader[Event] with EventValidator {
   override protected def parse(implicit source: YamlSourceReader): Event = {
     val tags = <<![List[String]]("tags").toSet
     val value = <<![AnyRef]("value") match {
-      case yaml: YamlSourceReader ⇒ yaml.flatten()
-      case any                    ⇒ any
+      case None ⇒ 0f
+      case any  ⇒ any.toString.toFloat
+    }
+
+    val content = <<?[AnyRef]("content") match {
+      case None                         ⇒ None
+      case Some(yaml: YamlSourceReader) ⇒ Some(yaml.flatten())
+      case any                          ⇒ Some(any)
     }
 
     val timestamp = <<?[String]("timestamp") match {
@@ -32,7 +38,7 @@ object EventReader extends YamlReader[Event] with EventValidator {
 
     val `type` = <<?[String]("type").getOrElse("event")
 
-    Event(tags, value, timestamp, `type`)
+    Event(tags, value, content, timestamp, `type`)
   }
 
   override def validate(event: Event): Event = validateEvent(event)

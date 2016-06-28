@@ -81,15 +81,14 @@ class PulseActor extends PulseStats with PulseEvent with PulseFailureNotifier wi
     case health ⇒ Map[String, Any]("elasticsearch" -> health)
   }
 
-  private def publish(publishEventValue: Boolean)(event: Event) = {
+  private def publish(publishEventContent: Boolean)(event: Event) = {
     implicit val formats = SerializationFormat(OffsetDateTimeSerializer, new EnumNameSerializer(Aggregator))
     val (indexName, typeName) = indexTypeName(event.`type`)
     log.debug(s"Pulse publish an event to index '$indexName/$typeName': ${event.tags}")
 
-    val eventToSend = (publishEventValue, event.value) match {
-      case (true, str: String) ⇒ event
-      case (true, any)         ⇒ event.copy(value = write(any)(DefaultFormats))
-      case (false, _)          ⇒ event.copy(value = "")
+    val eventToSend = publishEventContent match {
+      case true  ⇒ event
+      case false ⇒ event.copy(content = None)
     }
 
     es.index[ElasticsearchIndexResponse](indexName, typeName, eventToSend) map {
@@ -168,7 +167,7 @@ class PulseActor extends PulseStats with PulseEvent with PulseFailureNotifier wi
 
   protected def aggregateEvents(eventQuery: EventQuery, aggregator: AggregatorType, field: Option[String]) = {
     es.aggregate(indexName, constructAggregation(eventQuery, aggregator, field)) map {
-      case ElasticsearchAggregationResponse(ElasticsearchAggregations(ElasticsearchAggregationValue(value))) ⇒ DoubleValueAggregationResult(value)
+      case ElasticsearchAggregationResponse(ElasticsearchAggregations(ElasticsearchAggregationValue(value))) ⇒ DoubleValueAggregationResult(value.getOrElse(0d))
       case other ⇒ reportException(EventQueryError(other))
     }
   }

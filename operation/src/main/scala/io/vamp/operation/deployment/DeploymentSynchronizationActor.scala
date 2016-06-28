@@ -3,20 +3,20 @@ package io.vamp.operation.deployment
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.{ ActorRef, Props }
 import io.vamp.common.akka.IoC._
 import io.vamp.common.akka._
 import io.vamp.common.config.Config
 import io.vamp.container_driver.ContainerDriverActor.DeploymentServices
-import io.vamp.container_driver.{ContainerDriverActor, ContainerService}
+import io.vamp.container_driver.{ ContainerDriverActor, ContainerService }
 import io.vamp.model.artifact.DeploymentService.State.Intention
 import io.vamp.model.artifact.DeploymentService.State.Step._
 import io.vamp.model.artifact.DeploymentService._
 import io.vamp.model.artifact._
 import io.vamp.model.resolver.DeploymentTraitResolver
 import io.vamp.operation.deployment.DeploymentSynchronizationActor.SynchronizeAll
-import io.vamp.operation.notification.{DeploymentTimeoutError, OperationNotificationProvider}
-import io.vamp.persistence.db.{ArtifactPaginationSupport, PersistenceActor}
+import io.vamp.operation.notification.{ DeploymentTimeoutError, OperationNotificationProvider }
+import io.vamp.persistence.db.{ ArtifactPaginationSupport, PersistenceActor }
 import io.vamp.persistence.operation.DeploymentPersistence._
 import io.vamp.persistence.operation.DeploymentServiceState
 

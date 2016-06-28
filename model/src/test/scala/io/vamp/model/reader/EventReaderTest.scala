@@ -17,7 +17,8 @@ class EventReaderTest extends FlatSpec with Matchers with ReaderTest {
     EventReader.read(res("event/event1.yml")) should have(
       'tags(Set("server", "service")),
       'timestamp(OffsetDateTime.parse("2015-06-05T15:12:38.000Z")),
-      'value(0),
+      'value(0.0),
+      'content(None),
       'type("metrics")
     )
   }
@@ -25,7 +26,8 @@ class EventReaderTest extends FlatSpec with Matchers with ReaderTest {
   it should "expand tags" in {
     EventReader.read(res("event/event2.yml")) should have(
       'tags(Set("server")),
-      'value(Map("response" -> Map("time" -> 50))),
+      'value(0.0),
+      'content(Some(Map("response" -> Map("time" -> 50)))),
       'type("metrics")
     )
   }

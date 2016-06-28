@@ -35,7 +35,7 @@ trait Percolator {
       case (name, percolator) ⇒
         if (percolator.tags.forall(event.tags.contains)) {
           log.debug(s"Percolate match for '$name'.")
-          val send = if (publishEventValue) event else event.copy(value = None)
+          val send = if (publishEventValue) event else event.copy(value = 0f)
           percolator.actor ! (percolator.message -> send)
         }
     }

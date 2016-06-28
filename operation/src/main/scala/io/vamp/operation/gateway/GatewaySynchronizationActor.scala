@@ -231,6 +231,6 @@ class GatewaySynchronizationActor extends CommonSupportForActors with ArtifactSu
   private def sendEvent(gateway: Gateway, event: String) = {
     log.info(s"Gateway event: ${gateway.name} - $event")
     val tags = Set(s"gateways${Event.tagDelimiter}${gateway.name}", event)
-    IoC.actorFor[PulseActor] ! Publish(Event(tags, gateway), publishEventValue = true)
+    IoC.actorFor[PulseActor] ! Publish(Event(tags, content = gateway), publishEventValue = true)
   }
 }

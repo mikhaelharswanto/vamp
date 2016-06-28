@@ -9,7 +9,7 @@ import akka.util.Timeout
 import io.vamp.common.akka.IoC._
 import io.vamp.common.akka._
 import io.vamp.common.notification.NotificationProvider
-import io.vamp.model.event.{ Event, EventQuery, TimeRange }
+import io.vamp.model.event.{ EventQuery, TimeRange }
 import io.vamp.model.reader._
 import io.vamp.operation.sse.EventStreamingActor
 import io.vamp.operation.sse.EventStreamingActor.{ CloseStream, OpenStream }
@@ -47,8 +47,8 @@ trait EventValue {
     val eventQuery = EventQuery(tags, Option(timeRange(window)), None)
 
     actorFor[PulseActor] ? PulseActor.Query(EventRequestEnvelope(eventQuery, 1, 1)) map {
-      case EventResponseEnvelope(Event(_, value, _, _) :: tail, _, _, _) ⇒ Option(value)
-      case other ⇒ None
+      case env: EventResponseEnvelope ⇒ Option(env.response.head.value.asInstanceOf)
+      case other                      ⇒ None
     }
   }
 

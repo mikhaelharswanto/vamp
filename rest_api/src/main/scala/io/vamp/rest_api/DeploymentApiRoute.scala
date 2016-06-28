@@ -92,7 +92,7 @@ trait DeploymentApiRoute extends DeploymentApiController with DevController {
           validateOnly { validateOnly ⇒
             onSuccess(createDeployment(request, validateOnly)) {
               case result: List[Any] ⇒ respondWith(Accepted, result.last)
-              case result ⇒ respondWith(Accepted, result)
+              case result            ⇒ respondWith(Accepted, result)
             }
           }
         }
@@ -114,7 +114,7 @@ trait DeploymentApiRoute extends DeploymentApiController with DevController {
             validateOnly { validateOnly ⇒
               onSuccess(updateDeployment(name, request, validateOnly)) {
                 case result: List[Any] ⇒ respondWith(Accepted, result.last)
-                case result ⇒ respondWith(Accepted, result)
+                case result            ⇒ respondWith(Accepted, result)
               }
             }
           }

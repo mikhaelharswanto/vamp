@@ -40,7 +40,7 @@ class SlaActor extends SlaPulse with ArtifactPaginationSupport with EventPaginat
 
   override def info(notification: Notification): Unit = {
     notification match {
-      case se: SlaEvent ⇒ actorFor[PulseActor] ! Publish(Event(Set("sla") ++ se.tags, se.value, se.timestamp))
+      case se: SlaEvent ⇒ actorFor[PulseActor] ! Publish(Event(Set("sla") ++ se.tags, 0f, se.value, se.timestamp))
       case _            ⇒
     }
     super.info(notification)
@@ -110,7 +110,7 @@ trait SlaPulse {
   }
 
   def responseTime(deployment: Deployment, cluster: DeploymentCluster, portName: String, from: OffsetDateTime, to: OffsetDateTime): Future[Option[Double]] = {
-    val tags = Set(s"gateways:${deployment.name}_${cluster.name}_$portName", "metrics:responseTime")
+    val tags = Set(s"gateways:${deployment.name}/${cluster.name}/$portName", "metrics:responseTime")
 
     eventCount(tags, from, to, -1) flatMap {
       case count if count >= 0 ⇒

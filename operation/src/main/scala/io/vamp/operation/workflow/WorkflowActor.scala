@@ -128,6 +128,6 @@ class WorkflowActor extends ArtifactPaginationSupport with ArtifactSupport with 
   }
 
   private def pulse(workflow: ScheduledWorkflow, scheduled: Boolean) = {
-    actorFor[PulseActor] ! Publish(Event(Set(s"workflows${Event.tagDelimiter}${workflow.name}", if (scheduled) scheduledTag else unscheduledTag), workflow), publishEventValue = false)
+    actorFor[PulseActor] ! Publish(Event(Set(s"workflows${Event.tagDelimiter}${workflow.name}", if (scheduled) scheduledTag else unscheduledTag), content = workflow), publishEventValue = false)
   }
 }
