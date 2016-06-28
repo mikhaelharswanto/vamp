@@ -38,7 +38,7 @@ private[config] class Config(config: TypesafeConfig, root: String) {
       val key = entry.getKey
 
       val value = environment(absolutePath(path, key)).map {
-        value ⇒ ConfigFactory.parseString(s"$key:$value").withFallback(config)
+        value ⇒ ConfigFactory.parseString(s"""$key = "$value"""").withFallback(config)
       } getOrElse cfg getAnyRef key
 
       key -> value
