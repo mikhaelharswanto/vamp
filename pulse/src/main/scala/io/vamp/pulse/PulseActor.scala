@@ -86,9 +86,10 @@ class PulseActor extends PulseStats with PulseEvent with PulseFailureNotifier wi
     val (indexName, typeName) = indexTypeName(event.`type`)
     log.debug(s"Pulse publish an event to index '$indexName/$typeName': ${event.tags}")
 
-    val eventToSend = publishEventContent match {
-      case true  ⇒ event
-      case false ⇒ event.copy(content = None)
+    val eventToSend = (publishEventContent, event.content) match {
+      case (true, str: String) ⇒ event
+      case (true, any)         ⇒ event.copy(content = write(any)(DefaultFormats))
+      case (false, _)          ⇒ event.copy(content = None)
     }
 
     es.index[ElasticsearchIndexResponse](indexName, typeName, eventToSend) map {
