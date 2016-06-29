@@ -102,7 +102,7 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver {
             case Some(app) ⇒
               val scale = DefaultScale("", Quantity(app.cpus), MegaByte(app.mem), app.instances)
               val instances = app.tasks.map(task ⇒ ContainerInstance(task.id, task.host, task.ports, task.startedAt.isDefined))
-              ContainerService(deployment, service, Option(Containers(scale, instances)))
+              ContainerService(deployment, service, Option(Containers(scale, instances, app.env.toList)))
             case None ⇒ ContainerService(deployment, service, None)
           }
       } foreach { cs ⇒ replyTo ! cs }
@@ -151,14 +151,7 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver {
   }
 
   private def sendRequest(update: Boolean, id: String, payload: JValue) = update match {
-    case true ⇒ RestClient.get[Any](s"$marathonUrl/v2/apps/$id").flatMap { response ⇒
-      val changed = Extraction.decompose(response).children.headOption match {
-        case Some(app) ⇒ app.diff(payload).changed
-        case None      ⇒ payload
-      }
-      RestClient.put[Any](s"$marathonUrl/v2/apps/$id", changed)
-    }
-
+    case true  ⇒ RestClient.put[Any](s"$marathonUrl/v2/apps/$id?force=true", payload)
     case false ⇒ RestClient.post[Any](s"$marathonUrl/v2/apps", payload)
   }
 

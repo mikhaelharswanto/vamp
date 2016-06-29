@@ -64,7 +64,7 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
 
   private def deploy(deployment: Deployment, deploymentCluster: DeploymentCluster, deploymentService: DeploymentService, containers: Option[Containers]) = {
 
-    def deployTo(update: Boolean) = actorFor[ContainerDriverActor] ! ContainerDriverActor.Deploy(deployment, deploymentCluster, deploymentService, update = update)
+    def deployTo(update: Boolean, ds: DeploymentService = deploymentService) = actorFor[ContainerDriverActor] ! ContainerDriverActor.Deploy(deployment, deploymentCluster, ds, update = update)
 
     def convert(server: ContainerInstance): DeploymentInstance = {
       val ports = deploymentService.breed.ports.map(_.name) zip server.ports
@@ -81,9 +81,9 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
         }
 
       case Some(cs) ⇒
-        if (!matchingScale(deploymentService, cs))
-          deployTo(update = true)
-        else if (!matchingServers(deploymentService, cs)) {
+        if (!matchingScale(deploymentService, cs) || !matchingEnvironmentVariables(deploymentService, cs)) {
+          deployTo(update = true, deploymentService.copy(environmentVariables = resolveEnvironmentVariables(deployment, deploymentCluster, deploymentService)))
+        } else if (!matchingServers(deploymentService, cs)) {
           persist(DeploymentServiceInstances(serviceArtifactName(deployment, deploymentCluster, deploymentService), cs.instances.map(convert)))
         } else {
           persist(DeploymentServiceState(serviceArtifactName(deployment, deploymentCluster, deploymentService), deploymentService.state.copy(step = Done())))
@@ -111,7 +111,7 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
     service.breed.environmentVariables.count(_ ⇒ true) <= service.environmentVariables.count(_ ⇒ true) && service.environmentVariables.forall(_.interpolated.isDefined)
   }
 
-  private def resolveEnvironmentVariables(deployment: Deployment, cluster: DeploymentCluster, service: DeploymentService): Unit = {
+  private def resolveEnvironmentVariables(deployment: Deployment, cluster: DeploymentCluster, service: DeploymentService): List[EnvironmentVariable] = {
     val clusterEnvironmentVariables = resolveEnvironmentVariables(deployment, cluster :: Nil)
 
     val local = (service.breed.environmentVariables.filter(_.value.isDefined) ++
@@ -129,6 +129,7 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
     }
 
     persist(DeploymentServiceEnvironmentVariables(serviceArtifactName(deployment, cluster, service), environmentVariables))
+    environmentVariables
   }
 
   private def redeployIfNeeded(deployment: Deployment, deploymentCluster: DeploymentCluster, deploymentService: DeploymentService, containers: Option[Containers]) = {
@@ -168,12 +169,19 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
   }
 
   private def matchingScale(deploymentService: DeploymentService, containers: Containers) = {
-
     val cpu = if (checkCpu) containers.scale.cpu == deploymentService.scale.get.cpu else true
     val memory = if (checkMemory) containers.scale.memory == deploymentService.scale.get.memory else true
     val instances = if (checkInstances) containers.instances.size == deploymentService.scale.get.instances else true
 
     instances && cpu && memory
+  }
+
+  private def matchingEnvironmentVariables(deploymentService: DeploymentService, containers: Containers) = {
+    deploymentService.environmentVariables == Nil ||
+      containers.env == Nil ||
+      deploymentService.environmentVariables
+      .map(ev ⇒ (ev.name.substring(ev.name.lastIndexOf('.') + 1), ev.value))
+      .equals(containers.env)
   }
 
   private def updateGateways(deployment: Deployment, cluster: DeploymentCluster) = cluster.gateways.foreach { gateway ⇒

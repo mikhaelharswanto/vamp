@@ -5,8 +5,7 @@
     "_default_": {
       "properties": {
         "value": {
-          "type": "double",
-          "index": "no"
+          "type": "double"
         },
         "content": {
           "type": "string",

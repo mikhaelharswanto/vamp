@@ -30,7 +30,7 @@ object ContainerDriverActor {
 
 }
 
-case class Containers(scale: DefaultScale, instances: List[ContainerInstance])
+case class Containers(scale: DefaultScale, instances: List[ContainerInstance], env: List[(String, Option[String])] = Nil)
 
 case class ContainerService(deployment: Deployment, service: DeploymentService, containers: Option[Containers])
 

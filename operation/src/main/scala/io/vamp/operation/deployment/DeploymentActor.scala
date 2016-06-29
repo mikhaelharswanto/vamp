@@ -136,7 +136,7 @@ trait BlueprintSupport extends DeploymentValidator with NameValidator with Bluep
                 breed ← artifactFor[DefaultBreed](service.breed)
                 scale ← artifactFor[DefaultScale](service.scale)
               } yield {
-                DeploymentService(Deploy, breed, service.environmentVariables, scale, Nil, arguments(breed, service), Map(), service.dialects)
+                DeploymentService(Deploy, breed, breed.environmentVariables, scale, Nil, arguments(breed, service), Map(), service.dialects)
               }
             })
             gateways ← expandGateways(cluster.gateways)
@@ -432,10 +432,11 @@ trait DeploymentMerger extends DeploymentOperation with DeploymentTraitResolver 
 
             val scale = if (bpService.scale.isDefined) bpService.scale else service.scale
             val state: DeploymentService.State = if (service.scale != bpService.scale || sc.gateways != blueprintCluster.gateways) Deploy else service.state
+            val breed = service.breed.copy(environmentVariables = bpService.environmentVariables)
 
             if (!validateOnly) resetServiceArtifacts(deployment, blueprintCluster, service, state)
 
-            service.copy(scale = scale, dialects = service.dialects ++ bpService.dialects)
+            service.copy(scale = scale, dialects = service.dialects ++ bpService.dialects, environmentVariables = bpService.environmentVariables, breed = breed)
         }
       }
     }
