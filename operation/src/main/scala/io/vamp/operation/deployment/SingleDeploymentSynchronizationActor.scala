@@ -73,7 +73,7 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
 
     containers match {
       case None ⇒
-        if (hasDependenciesDeployed(deployment, deploymentCluster, deploymentService)) {
+         if (hasDependenciesDeployed(deployment, deploymentCluster, deploymentService)) {
           if (hasResolvedEnvironmentVariables(deployment, deploymentCluster, deploymentService))
             deployTo(update = false)
           else
@@ -180,7 +180,7 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
     deploymentService.environmentVariables == Nil ||
       containers.env == Nil ||
       deploymentService.environmentVariables
-      .map(ev ⇒ (ev.name.substring(ev.name.lastIndexOf('.') + 1), ev.value))
+      .map(ev ⇒ (ev.name.substring(ev.name.lastIndexOf('.') + 1), ev.interpolated))
       .equals(containers.env)
   }
 
