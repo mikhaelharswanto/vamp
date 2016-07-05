@@ -178,7 +178,7 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver {
       case _ ⇒
     }
 
-    Extraction.decompose(interpolate(deployment, local, dialect)) merge Extraction.decompose(app)
+    Extraction.decompose(app) merge Extraction.decompose(interpolate(deployment, local, dialect))
   }
 
   private def undeploy(deployment: Deployment, service: DeploymentService) = {
