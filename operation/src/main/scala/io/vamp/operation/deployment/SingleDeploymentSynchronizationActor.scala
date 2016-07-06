@@ -163,7 +163,8 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
       deploymentService.instances.forall { server ⇒
         server.deployed && (containers.instances.find(_.name == server.name) match {
           case None                  ⇒ false
-          case Some(containerServer) ⇒ server.ports.size == containerServer.ports.size && server.ports.values.forall(port ⇒ containerServer.ports.contains(port))
+          case Some(containerServer) ⇒ deploymentService.breed.ports.isEmpty ||
+            (server.ports.size == containerServer.ports.size && server.ports.values.forall(port ⇒ containerServer.ports.contains(port)))
         })
       }
   }
