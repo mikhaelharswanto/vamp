@@ -11,7 +11,6 @@ import io.vamp.persistence.db.{ ArtifactPaginationSupport, PersistenceActor }
 import io.vamp.persistence.operation.InnerGateway
 
 import scala.concurrent.Future
-import scala.language.postfixOps
 import scala.util.Try
 
 object GatewayActor {
@@ -143,14 +142,14 @@ class GatewayActor extends ArtifactPaginationSupport with CommonSupportForActors
     } else gateway
 
     val routes = updatedWeights.routes.map(_.asInstanceOf[DefaultRoute]).map { route ⇒
-      val default = if (route.hasFilters) 100 else 0
-      route.copy(filterStrength = Option(route.filterStrength.getOrElse(Percentage(default))))
+      val default = if (route.hasConditions) 100 else 0
+      route.copy(conditionStrength = Option(route.conditionStrength.getOrElse(Percentage(default))))
     }
 
     updatedWeights.copy(routes = routes)
   }
 
-  private def validate: Gateway ⇒ Gateway = validateGatewayRouteWeights andThen validateGatewayRouteFilterStrengths
+  private def validate: Gateway ⇒ Gateway = validateGatewayRouteWeights andThen validateGatewayRouteConditionStrengths
 
   private def validateUniquePort: Gateway ⇒ Future[Gateway] = {
     case gateway if gateway.inner ⇒ Future.successful(gateway)

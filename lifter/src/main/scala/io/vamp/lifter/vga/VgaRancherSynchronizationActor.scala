@@ -3,12 +3,9 @@ package io.vamp.lifter.vga
 import akka.pattern.ask
 import io.vamp.common.akka._
 import io.vamp.container_driver.DockerAppDriver.{ DeployDockerApp, RetrieveDockerApp }
-import io.vamp.container_driver.rancher.LaunchConfig
 import io.vamp.container_driver.{ ContainerDriverActor, Docker, DockerApp }
 import io.vamp.lifter.notification.LifterNotificationProvider
 import io.vamp.lifter.vga.VgaRancherSynchronizationActor.Synchronize
-
-import scala.language.postfixOps
 
 class VgaRancherSynchronizationSchedulerActor extends SchedulerActor with LifterNotificationProvider {
 
@@ -50,7 +47,7 @@ class VgaRancherSynchronizationActor extends VgaSynchronizationActor {
           portMappings = ports,
           parameters = Nil,
           privileged = true,
-          network = LaunchConfig.defaultNetworkMode
+          network = network
         )
       ),
       instances = 1,

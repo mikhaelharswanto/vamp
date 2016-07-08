@@ -88,10 +88,6 @@ class DeploymentActor extends CommonSupportForActors with BlueprintSupport with 
       updateScale(deployment, cluster, service, scale, source)
     }
 
-    case UpdateGateways(deployment, cluster, routing, source) ⇒ reply {
-      updateInnerGateways(deployment, cluster, routing, source)
-    }
-
     case any ⇒ unsupported(UnsupportedDeploymentRequest(any))
   }
 
@@ -110,7 +106,7 @@ class DeploymentActor extends CommonSupportForActors with BlueprintSupport with 
 }
 
 trait BlueprintSupport extends DeploymentValidator with NameValidator with BlueprintGatewayHelper with ArtifactExpansionSupport {
-  this: ActorSystemProvider with ArtifactPaginationSupport with ExecutionContextProvider with NotificationProvider ⇒
+  this: DeploymentTraitResolver with ActorSystemProvider with ArtifactPaginationSupport with ExecutionContextProvider with NotificationProvider ⇒
 
   def deploymentFor(name: String, create: Boolean = false): Future[Deployment] = {
     if (!create) {
@@ -165,7 +161,7 @@ trait BlueprintSupport extends DeploymentValidator with NameValidator with Bluep
 }
 
 trait DeploymentValidator {
-  this: BlueprintGatewayHelper with ArtifactPaginationSupport with ArtifactSupport with ExecutionContextProvider with NotificationProvider ⇒
+  this: BlueprintGatewayHelper with DeploymentTraitResolver with ArtifactPaginationSupport with ArtifactSupport with ExecutionContextProvider with NotificationProvider ⇒
 
   def validateServices: (Deployment ⇒ Deployment) = { (deployment: Deployment) ⇒
     val services = deployment.clusters.flatMap(_.services).filterNot(_.state.intention == Undeploy)
@@ -176,12 +172,12 @@ trait DeploymentValidator {
       case (name, list) if list.size > 1 ⇒ throwException(NonUniqueBreedReferenceError(list.head))
     }
 
-    val breedNames = breeds.map(_.name.toString).toSet
-    breeds.foreach {
-      breed ⇒
-        breed.dependencies.values.find(dependency ⇒ !breedNames.contains(dependency.name)).flatMap {
-          dependency ⇒ throwException(UnresolvedDependencyError(breed, dependency))
-        }
+    breeds.foreach { breed ⇒
+      breed.dependencies.values.find { dependency ⇒
+        !breeds.filterNot(_.name == breed.name).exists(matchDependency(dependency))
+      } flatMap { dependency ⇒
+        throwException(UnresolvedDependencyError(breed, dependency))
+      }
     }
 
     breeds.foreach(BreedReader.validateNonRecursiveDependencies)
@@ -432,11 +428,10 @@ trait DeploymentMerger extends DeploymentOperation with DeploymentTraitResolver 
 
             val scale = if (bpService.scale.isDefined) bpService.scale else service.scale
             val state: DeploymentService.State = if (service.scale != bpService.scale || sc.gateways != blueprintCluster.gateways) Deploy else service.state
-            val breed = service.breed.copy(environmentVariables = bpService.environmentVariables)
 
             if (!validateOnly) resetServiceArtifacts(deployment, blueprintCluster, service, state)
 
-            service.copy(scale = scale, dialects = service.dialects ++ bpService.dialects, environmentVariables = bpService.environmentVariables, breed = breed)
+            service.copy(scale = scale, dialects = service.dialects ++ bpService.dialects, environmentVariables = bpService.environmentVariables)
         }
       }
     }
@@ -590,12 +585,11 @@ trait DeploymentSlicer extends DeploymentOperation {
         val newClusters = stable.clusters.map(cluster ⇒
           blueprint.clusters.find(_.name == cluster.name).map { bpc ⇒
 
-            bpc.services.foreach { service ⇒
-              if (!validateOnly) resetServiceArtifacts(stable, bpc, service, Undeploy)
-            }
-
             val services = cluster.services.map { service ⇒
-              service.copy(state = if (bpc.services.exists(service.breed.name == _.breed.name)) Undeploy else service.state)
+              if (bpc.services.exists(service.breed.name == _.breed.name)) {
+                if (!validateOnly) resetServiceArtifacts(stable, bpc, service, Undeploy)
+                service.copy(state = Undeploy)
+              } else service
             }
 
             val routing = cluster.gateways.map { gateway ⇒
@@ -651,10 +645,5 @@ trait DeploymentUpdate {
     lazy val services = cluster.services.map(s ⇒ if (s.breed.name == service.breed.name) service.copy(scale = Some(scale), state = Deploy) else s)
     val clusters = deployment.clusters.map(c ⇒ if (c.name == cluster.name) c.copy(services = services) else c)
     actorFor[PersistenceActor] ? PersistenceActor.Update(deployment.copy(clusters = clusters), Some(source))
-  }
-
-  def updateInnerGateways(deployment: Deployment, cluster: DeploymentCluster, gateways: List[Gateway], source: String) = {
-    val clusters = deployment.clusters.map(c ⇒ if (c.name == cluster.name) c.copy(gateways = gateways) else c)
-    actorFor[PersistenceActor] ? PersistenceActor.Update(validateInnerGateways(deployment.copy(clusters = clusters)), Some(source))
   }
 }

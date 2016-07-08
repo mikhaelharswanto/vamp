@@ -17,8 +17,9 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
-import scala.language.{ implicitConversions, postfixOps }
 import scala.util.{ Failure, Success }
+
+import scala.language.postfixOps
 
 object CLIDeploymentReader extends AbstractDeploymentReader {
   protected def routingReader: GatewayMappingReader[Gateway] = new InnerGatewayReader(acceptPort = true, onlyAnonymous = false)
@@ -33,15 +34,15 @@ object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiCont
 
   def createBreed(definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Breed] = {
     sendAndWaitYaml(s"POST $vampHost/api/v1/breeds", Some(definition)) match {
-      case Some(breed) ⇒ Some(BreedReader.read(breed))
-      case _           ⇒ terminateWithError("Breed not created")
+      case Some(b) ⇒ Some(BreedReader.read(b))
+      case _       ⇒ terminateWithError("Breed not created")
     }
   }
 
   def createBlueprint(definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Blueprint] = {
     sendAndWaitYaml(s"POST $vampHost/api/v1/blueprints", Some(definition)) match {
-      case Some(blueprint) ⇒ Some(BlueprintReader.read(blueprint))
-      case _               ⇒ terminateWithError("Blueprint not created")
+      case Some(b) ⇒ Some(BlueprintReader.read(b))
+      case _       ⇒ terminateWithError("Blueprint not created")
     }
   }
 
@@ -59,10 +60,10 @@ object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiCont
     }
   }
 
-  def createFilter(definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Filter] = {
-    sendAndWaitYaml(s"POST $vampHost/api/v1/filters", Some(definition)) match {
-      case Some(filter) ⇒ Some(FilterReader.read(filter))
-      case _            ⇒ terminateWithError("Filter not created")
+  def createCondition(definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Condition] = {
+    sendAndWaitYaml(s"POST $vampHost/api/v1/conditions", Some(definition)) match {
+      case Some(condition) ⇒ Some(ConditionReader.read(condition))
+      case _               ⇒ terminateWithError("Condition not created")
     }
   }
 
@@ -82,29 +83,29 @@ object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiCont
 
   def createScale(definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Scale] = {
     sendAndWaitYaml(s"POST $vampHost/api/v1/scales", Some(definition)) match {
-      case Some(scale) ⇒ Some(ScaleReader.read(scale))
-      case _           ⇒ terminateWithError("Scale not created")
+      case Some(s) ⇒ Some(ScaleReader.read(s))
+      case _       ⇒ terminateWithError("Scale not created")
     }
   }
 
   def createSla(definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Sla] = {
     sendAndWaitYaml(s"POST $vampHost/api/v1/slas", Some(definition)) match {
-      case Some(sla) ⇒ Some(SlaReader.read(sla))
-      case _         ⇒ terminateWithError("Sla not created")
+      case Some(s) ⇒ Some(SlaReader.read(s))
+      case _       ⇒ terminateWithError("Sla not created")
     }
   }
 
   def updateBreed(name: String, definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Breed] = {
     sendAndWaitYaml(s"PUT $vampHost/api/v1/breeds/$name", Some(definition)) match {
-      case Some(breed) ⇒ Some(BreedReader.read(breed))
-      case _           ⇒ terminateWithError("Breed not updated")
+      case Some(b) ⇒ Some(BreedReader.read(b))
+      case _       ⇒ terminateWithError("Breed not updated")
     }
   }
 
   def updateBlueprint(name: String, definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Blueprint] = {
     sendAndWaitYaml(s"PUT $vampHost/api/v1/blueprints/$name", Some(definition)) match {
-      case Some(blueprint) ⇒ Some(BlueprintReader.read(blueprint))
-      case _               ⇒ terminateWithError("Blueprint not updated")
+      case Some(b) ⇒ Some(BlueprintReader.read(b))
+      case _       ⇒ terminateWithError("Blueprint not updated")
     }
   }
 
@@ -122,17 +123,17 @@ object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiCont
     }
   }
 
-  def updateFilter(name: String, definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Filter] = {
-    sendAndWaitYaml(s"PUT $vampHost/api/v1/filters/$name", Some(definition)) match {
-      case Some(filter) ⇒ Some(FilterReader.read(filter))
-      case _            ⇒ terminateWithError("Filter not updated")
+  def updateCondition(name: String, definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Condition] = {
+    sendAndWaitYaml(s"PUT $vampHost/api/v1/conditions/$name", Some(definition)) match {
+      case Some(condition) ⇒ Some(ConditionReader.read(condition))
+      case _               ⇒ terminateWithError("Condition not updated")
     }
   }
 
   def updateRewrite(name: String, definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Rewrite] = {
     sendAndWaitYaml(s"PUT $vampHost/api/v1/rewrites/$name", Some(definition)) match {
       case Some(rewrite) ⇒ Some(RewriteReader.read(rewrite))
-      case _             ⇒ terminateWithError("Filter not updated")
+      case _             ⇒ terminateWithError("Condition not updated")
     }
   }
 
@@ -145,15 +146,15 @@ object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiCont
 
   def updateScale(name: String, definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Scale] = {
     sendAndWaitYaml(s"PUT $vampHost/api/v1/scales/$name", Some(definition)) match {
-      case Some(scale) ⇒ Some(ScaleReader.read(scale))
-      case _           ⇒ terminateWithError("Scale not updated")
+      case Some(s) ⇒ Some(ScaleReader.read(s))
+      case _       ⇒ terminateWithError("Scale not updated")
     }
   }
 
   def updateSla(name: String, definition: String, jsonOutput: Boolean = false)(implicit vampHost: String): Option[Sla] = {
     sendAndWaitYaml(s"PUT $vampHost/api/v1/slas/$name", Some(definition)) match {
-      case Some(sla) ⇒ Some(SlaReader.read(sla))
-      case _         ⇒ terminateWithError("Sla not updated")
+      case Some(s) ⇒ Some(SlaReader.read(s))
+      case _       ⇒ terminateWithError("Sla not updated")
     }
   }
 
@@ -169,8 +170,8 @@ object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiCont
   def deleteEscalation(name: String)(implicit vampHost: String) =
     sendAndWaitYaml(s"DELETE $vampHost/api/v1/escalations/$name", None)
 
-  def deleteFilter(name: String)(implicit vampHost: String) =
-    sendAndWaitYaml(s"DELETE $vampHost/api/v1/filters/$name", None)
+  def deleteCondition(name: String)(implicit vampHost: String) =
+    sendAndWaitYaml(s"DELETE $vampHost/api/v1/conditions/$name", None)
 
   def deleteRewrite(name: String)(implicit vampHost: String) =
     sendAndWaitYaml(s"DELETE $vampHost/api/v1/rewrites/$name", None)
@@ -211,8 +212,8 @@ object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiCont
 
   def getDeployments(implicit vampHost: String): List[Deployment] =
     sendAndWaitYaml(s"GET $vampHost/api/v1/deployments") match {
-      case Some(deployments) ⇒ yamArrayListToList(deployments).map(a ⇒ CLIDeploymentReader.read(a))
-      case None              ⇒ List.empty
+      case Some(d) ⇒ yamArrayListToList(d).map(a ⇒ CLIDeploymentReader.read(a))
+      case None    ⇒ List.empty
     }
 
   def getEscalations(implicit vampHost: String): List[Escalation] =
@@ -221,9 +222,9 @@ object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiCont
       case None      ⇒ List.empty
     }
 
-  def getFilters(implicit vampHost: String): List[Filter] =
-    sendAndWaitYaml(s"GET $vampHost/api/v1/filters") match {
-      case Some(ser) ⇒ yamArrayListToList(ser).map(a ⇒ FilterReader.read(a))
+  def getConditions(implicit vampHost: String): List[Condition] =
+    sendAndWaitYaml(s"GET $vampHost/api/v1/conditions") match {
+      case Some(ser) ⇒ yamArrayListToList(ser).map(a ⇒ ConditionReader.read(a))
       case None      ⇒ List.empty
     }
 
@@ -272,8 +273,8 @@ object VampHostCalls extends RestSupport with RestApiMarshaller with RestApiCont
   def getEscalation(name: String)(implicit vampHost: String): Option[Escalation] =
     sendAndWaitYaml(s"GET $vampHost/api/v1/escalations/$name").map(EscalationReader.read(_))
 
-  def getFilter(filterId: String)(implicit vampHost: String): Option[Filter] =
-    sendAndWaitYaml(s"GET $vampHost/api/v1/filters/$filterId").map(FilterReader.read(_))
+  def getCondition(conditionId: String)(implicit vampHost: String): Option[Condition] =
+    sendAndWaitYaml(s"GET $vampHost/api/v1/conditions/$conditionId").map(ConditionReader.read(_))
 
   def getRewrite(rewriteId: String)(implicit vampHost: String): Option[Rewrite] =
     sendAndWaitYaml(s"GET $vampHost/api/v1/rewrites/$rewriteId").map(RewriteReader.read(_))

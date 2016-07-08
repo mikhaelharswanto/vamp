@@ -1,18 +1,19 @@
 package io.vamp.gateway_driver.haproxy
 
-import io.vamp.gateway_driver.haproxy.{ Filter ⇒ HaProxyFilter, Server ⇒ HaProxyServer }
+import io.vamp.gateway_driver.haproxy.{ Condition ⇒ HaProxyCondition, Server ⇒ HaProxyServer }
 import io.vamp.model.artifact._
 import io.vamp.model.reader.Percentage
 import org.scalatest.{ FlatSpec, Informer, Matchers }
 
 import scala.io.Source
-import scala.language.postfixOps
 
 trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGatewayMarshaller {
 
   override lazy val path = Nil
 
   override lazy val version = "1.6"
+
+  override lazy val socketPath = "/usr/local/vamp"
 
   override def info = new Informer {
     override def apply(message: String, payload: Option[Any]): Unit = {}
@@ -63,7 +64,7 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
         balance = "roundrobin"
       ) :: Nil
 
-    val filters = HaProxyFilter(
+    val conditions = HaProxyCondition(
       name = "ie",
       acls = new HaProxyAclResolver() {} resolve ("hdr_sub(user-agent) Firefox" :: "hdr_sub(user-agent) Chrome" :: Nil),
       destination = backends.head
@@ -77,7 +78,7 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
       mode = Mode.http,
       unixSock = Option("/tmp/vamp_test_be_1_a.sock"),
       sockProtocol = Option("accept-proxy"),
-      filters = filters,
+      conditions = conditions,
       defaultBackend = backends.head
     ) :: Nil
 
@@ -95,8 +96,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
         name = "vamp/sava/port/_/vamp/sava/sava:1.0.0/port",
         path = GatewayPath("vamp/sava/sava:1.0.0/port"),
         weight = Option(Percentage(100)),
-        filterStrength = None,
-        filters = Nil,
+        conditionStrength = None,
+        conditions = Nil,
         rewrites = Nil,
         balance = None,
         targets = InternalRouteTarget(
@@ -120,8 +121,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
         name = "vamp/sava/port/_/vamp/sava/sava:1.0.0/port",
         path = GatewayPath("vamp/sava/sava:1.0.0/port"),
         weight = Option(Percentage(100)),
-        filterStrength = None,
-        filters = Nil,
+        conditionStrength = None,
+        conditions = Nil,
         rewrites = Nil,
         balance = None,
         targets = InternalRouteTarget(
@@ -145,8 +146,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp/sava/port/_/vamp/sava/sava:1.0.0/port",
           path = GatewayPath("vamp/sava/sava:1.0.0/port"),
           weight = Option(Percentage(100)),
-          filterStrength = None,
-          filters = Nil,
+          conditionStrength = None,
+          conditions = Nil,
           rewrites = Nil,
           balance = None,
           targets = InternalRouteTarget(
@@ -165,8 +166,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp/sava/port/_",
           path = GatewayPath("vamp/sava/port/_"),
           weight = Option(Percentage(100)),
-          filterStrength = None,
-          filters = Nil,
+          conditionStrength = None,
+          conditions = Nil,
           rewrites = Nil,
           balance = None,
           targets = InternalRouteTarget(
@@ -193,8 +194,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
             name = "vamp/sava/port/_/vamp/sava/sava:1.0.0/port",
             path = GatewayPath("vamp/sava/sava:1.0.0/port"),
             weight = Option(Percentage(90)),
-            filterStrength = None,
-            filters = Nil,
+            conditionStrength = None,
+            conditions = Nil,
             rewrites = Nil,
             balance = None,
             targets = List(
@@ -212,8 +213,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
             name = "vamp/sava/port/_/vamp/sava/sava:1.1.0/port",
             path = GatewayPath("vamp/sava/sava:1.1.0/port"),
             weight = Option(Percentage(10)),
-            filterStrength = None,
-            filters = Nil,
+            conditionStrength = None,
+            conditions = Nil,
             rewrites = Nil,
             balance = None,
             targets = List(
@@ -236,8 +237,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp/sava/port/_",
           path = GatewayPath("vamp/sava/port/_"),
           weight = Option(Percentage(100)),
-          filterStrength = None,
-          filters = Nil,
+          conditionStrength = None,
+          conditions = Nil,
           rewrites = Nil,
           balance = None,
           targets = InternalRouteTarget(
@@ -263,8 +264,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp/sava/sava-backend:1.3.0/port",
           path = GatewayPath("vamp/sava/sava-backend:1.3.0/port"),
           weight = Option(Percentage(100)),
-          filterStrength = None,
-          filters = Nil,
+          conditionStrength = None,
+          conditions = Nil,
           rewrites = Nil,
           balance = None,
           targets = InternalRouteTarget(
@@ -283,8 +284,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp/sava/sava-frontend:1.3.0/port",
           path = GatewayPath("vamp/sava/sava-frontend:1.3.0/port"),
           weight = Option(Percentage(100)),
-          filterStrength = None,
-          filters = Nil,
+          conditionStrength = None,
+          conditions = Nil,
           rewrites = Nil,
           balance = None,
           targets = InternalRouteTarget(
@@ -303,8 +304,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp/sava/port/_",
           path = GatewayPath("vamp/sava/port/_"),
           weight = Option(Percentage(100)),
-          filterStrength = None,
-          filters = Nil,
+          conditionStrength = None,
+          conditions = Nil,
           rewrites = Nil,
           balance = None,
           targets = InternalRouteTarget(
@@ -318,7 +319,7 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
     compare(marshall(HaProxy(version, converted.frontends, converted.backends, Nil, Nil, haProxyConfig)), "configuration_6.txt")
   }
 
-  it should "convert filters" in {
+  it should "convert conditions" in {
     val route = DefaultRoute("sava", GatewayPath("sava"), None, None, Nil, Nil, None)
     val backends = Backend("vamp://sava", "im_ec6129b90571c3f9737d86f16e82eabe2a3ae820", Mode.http, Nil, Nil, Nil, sticky = false, "") :: Nil
 
@@ -340,14 +341,14 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
       ("has header X-SPECIAL", "hdr_cnt(X-SPECIAL) gt 0"),
       ("misses header X-SPECIAL", "hdr_cnt(X-SPECIAL) eq 0")
     ) foreach { input ⇒
-        filter(route.copy(filters = DefaultFilter("", input._1) :: Nil))(backends, Gateway("vamp", Port(0), None, None, Nil, Nil)) match {
-          case HaProxyFilter(_, _, Some(acls)) ⇒
+        filter(route.copy(conditions = DefaultCondition("", input._1) :: Nil))(backends, Gateway("vamp", Port(0), None, None, Nil, Nil)) match {
+          case Condition(_, _, Some(acls)) ⇒
             acls.acls.head.definition shouldBe input._2
         }
       }
   }
 
-  it should "serialize service with filters to HAProxy configuration" in {
+  it should "serialize service with conditions to HAProxy configuration" in {
     val converted = convert(
       Gateway(
         name = "vamp/sava/port/_",
@@ -359,20 +360,20 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp/sava/port/_/vamp/sava/sava:1.0.0/port",
           path = GatewayPath("vamp/sava/sava:1.0.0/port"),
           weight = Option(Percentage(100)),
-          filterStrength = Option(Percentage(100)),
-          filters = List(
-            DefaultFilter(
+          conditionStrength = Option(Percentage(100)),
+          conditions = List(
+            DefaultCondition(
               name = "",
-              condition = "user-agent != safari"
-            ), DefaultFilter(
+              definition = "user-agent != safari"
+            ), DefaultCondition(
               name = "",
-              condition = "user-agent = chrome"
-            ), DefaultFilter(
+              definition = "user-agent = chrome"
+            ), DefaultCondition(
               name = "",
-              condition = "cookie group contains admin"
-            ), DefaultFilter(
+              definition = "cookie group contains admin"
+            ), DefaultCondition(
               name = "",
-              condition = "has header x-allow"
+              definition = "has header x-allow"
             )),
           rewrites = List(
             PathRewrite(
@@ -408,8 +409,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
             name = "vamp/sava/port/_/vamp/sava/sava:1.0.0/port",
             path = GatewayPath("vamp/sava/sava:1.0.0/port"),
             weight = Option(Percentage(90)),
-            filterStrength = None,
-            filters = Nil,
+            conditionStrength = None,
+            conditions = Nil,
             rewrites = Nil,
             balance = None,
             targets = List(
@@ -427,8 +428,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
             name = "vamp/sava/port/_/vamp/sava/sava:1.1.0/port",
             path = GatewayPath("vamp/sava/sava:1.1.0/port"),
             weight = Option(Percentage(10)),
-            filterStrength = None,
-            filters = Nil,
+            conditionStrength = None,
+            conditions = Nil,
             rewrites = Nil,
             balance = None,
             targets = List(
@@ -451,8 +452,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp/sava/port/_",
           path = GatewayPath("vamp/sava/port/_"),
           weight = Option(Percentage(100)),
-          filterStrength = None,
-          filters = Nil,
+          conditionStrength = None,
+          conditions = Nil,
           rewrites = Nil,
           balance = None,
           targets = InternalRouteTarget(
@@ -479,8 +480,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
             name = "vamp/sava/port/_/vamp/sava/sava:1.0.0/port",
             path = GatewayPath("vamp/sava/sava:1.0.0/port"),
             weight = Option(Percentage(90)),
-            filterStrength = None,
-            filters = Nil,
+            conditionStrength = None,
+            conditions = Nil,
             rewrites = Nil,
             balance = None,
             targets = List(
@@ -498,8 +499,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
             name = "vamp/sava/port/_/vamp/sava/sava:1.1.0/port",
             path = GatewayPath("vamp/sava/sava:1.1.0/port"),
             weight = Option(Percentage(10)),
-            filterStrength = None,
-            filters = Nil,
+            conditionStrength = None,
+            conditions = Nil,
             rewrites = Nil,
             balance = None,
             targets = List(
@@ -522,8 +523,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp/sava/port/_",
           path = GatewayPath("vamp/sava/port/_"),
           weight = Option(Percentage(100)),
-          filterStrength = None,
-          filters = Nil,
+          conditionStrength = None,
+          conditions = Nil,
           rewrites = Nil,
           balance = None,
           targets = InternalRouteTarget(
@@ -549,8 +550,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp:1.x/sava/sava:1.0.0/port",
           path = GatewayPath("vamp:1.x/sava/sava:1.0.0/port"),
           weight = Option(Percentage(100)),
-          filterStrength = None,
-          filters = Nil,
+          conditionStrength = None,
+          conditions = Nil,
           rewrites = Nil,
           balance = None,
           targets = InternalRouteTarget(
@@ -569,8 +570,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp:2.x/sava/sava:2.0.0/port",
           path = GatewayPath("vamp:2.x/sava/sava:2.0.0/port"),
           weight = Option(Percentage(100)),
-          filterStrength = None,
-          filters = Nil,
+          conditionStrength = None,
+          conditions = Nil,
           rewrites = Nil,
           balance = None,
           targets = InternalRouteTarget(
@@ -590,8 +591,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
             name = "vamp:1.x/sava/port",
             path = GatewayPath("vamp:1.x/sava/port"),
             weight = Option(Percentage(90)),
-            filterStrength = None,
-            filters = Nil,
+            conditionStrength = None,
+            conditions = Nil,
             rewrites = Nil,
             balance = None,
             targets = List(
@@ -603,8 +604,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
             name = "vamp:2.x/sava/port",
             path = GatewayPath("vamp:2.x/sava/port"),
             weight = Option(Percentage(10)),
-            filterStrength = None,
-            filters = Nil,
+            conditionStrength = None,
+            conditions = Nil,
             rewrites = Nil,
             balance = None,
             targets = List(
@@ -630,8 +631,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp:1.x/sava/sava:1.0.0/port",
           path = GatewayPath("vamp:1.x/sava/sava:1.0.0/port"),
           weight = Option(Percentage(100)),
-          filterStrength = None,
-          filters = Nil,
+          conditionStrength = None,
+          conditions = Nil,
           rewrites = Nil,
           balance = Some("first"),
           targets = InternalRouteTarget(
@@ -650,8 +651,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
           name = "vamp:2.x/sava/sava:2.0.0/port",
           path = GatewayPath("vamp:2.x/sava/sava:2.0.0/port"),
           weight = Option(Percentage(100)),
-          filterStrength = None,
-          filters = Nil,
+          conditionStrength = None,
+          conditions = Nil,
           rewrites = Nil,
           balance = Some("custom"),
           targets = InternalRouteTarget(
@@ -676,8 +677,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
         name = "vamp/sava/port/_/vamp/sava/sava:1.0.0/port",
         path = GatewayPath("vamp/sava/sava:1.0.0/port"),
         weight = Option(Percentage(100)),
-        filterStrength = None,
-        filters = Nil,
+        conditionStrength = None,
+        conditions = Nil,
         rewrites = Nil,
         balance = None,
         targets = InternalRouteTarget(
@@ -700,8 +701,8 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
         name = "vamp/sava/port/_/vamp/sava/sava:1.0.0/port",
         path = GatewayPath("vamp/sava/sava:1.0.0/port"),
         weight = Option(Percentage(100)),
-        filterStrength = None,
-        filters = Nil,
+        conditionStrength = None,
+        conditions = Nil,
         rewrites = Nil,
         balance = None,
         targets = InternalRouteTarget(

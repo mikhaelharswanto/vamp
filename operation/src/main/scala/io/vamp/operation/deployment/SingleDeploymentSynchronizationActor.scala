@@ -16,8 +16,6 @@ import io.vamp.persistence.operation.{ DeploymentPersistence, DeploymentServiceE
 import io.vamp.pulse.PulseActor.Publish
 import io.vamp.pulse.{ PulseActor, PulseEventTags }
 
-import scala.language.postfixOps
-
 object SingleDeploymentSynchronizationActor {
 
   case class Synchronize(containerService: ContainerService)
@@ -97,7 +95,7 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
     deploymentService.breed.dependencies.forall {
       case (n, d) ⇒
         deployment.clusters.exists { cluster ⇒
-          cluster.services.find(s ⇒ s.breed.name == d.name) match {
+          cluster.services.find(s ⇒ matchDependency(d)(s.breed)) match {
             case None ⇒ false
             case Some(service) ⇒ service.state.isDeployed && service.breed.ports.forall {
               port ⇒ cluster.serviceBy(port.name).isDefined
