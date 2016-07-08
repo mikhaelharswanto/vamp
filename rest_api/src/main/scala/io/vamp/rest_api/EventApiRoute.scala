@@ -35,6 +35,18 @@ trait EventApiRoute extends EventApiController {
           }
         }
       }
+    } ~ path("get") {
+      pathEndOrSingleSlash {
+        post {
+          pageAndPerPage() { (page, perPage) ⇒
+            entity(as[String]) { request ⇒
+              onSuccess(query(Map(), request)(page, perPage)) { response ⇒
+                respondWith(OK, response)
+              }
+            }
+          }
+        }
+      }
     }
   }
 
