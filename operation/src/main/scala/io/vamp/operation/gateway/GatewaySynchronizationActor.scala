@@ -176,7 +176,7 @@ class GatewaySynchronizationActor extends CommonSupportForActors with ArtifactSu
               service.instances.map {
                 instance ⇒
                   Option {
-                    InternalRouteTarget(instance.name, Option(instance.host), instance.ports.get(port).get)
+                    InternalRouteTarget(instance.name, Option(instance.host), instance.ports(port))
                   }
               }
             }.getOrElse(Nil)
@@ -190,25 +190,13 @@ class GatewaySynchronizationActor extends CommonSupportForActors with ArtifactSu
 
   private def select: GatewayPipeline ⇒ List[Gateway] = { pipeline ⇒
 
-    def byDeploymentClusterName(gateways: List[Gateway]) = gateways.filter(_.inner).groupBy(gateway ⇒ GatewayPath(gateway.name).segments(1))
-
-    val currentByDeployment = byDeploymentClusterName(current)
-    val deployable = byDeploymentClusterName(pipeline.deployable)
-    val nonDeployable = byDeploymentClusterName(pipeline.nonDeployable)
-
-    val inner = byDeploymentClusterName(pipeline.all).toList.flatMap {
-      case (d, g) if deployable.contains(d) && !nonDeployable.contains(d) ⇒ g
-      case (d, g) if nonDeployable.contains(d) ⇒ currentByDeployment.getOrElse(d, Nil)
-      case (_, g) ⇒ g
-    }
-
-    val selected = pipeline.deployable.filterNot(_.inner) ++ inner
+    val selected = pipeline.deployable
 
     val currentAsMap = current.map(g ⇒ g.name -> g).toMap
     val selectedAsMap = selected.map(g ⇒ g.name -> g).toMap
 
-    currentAsMap.keySet.diff(selectedAsMap.keySet).foreach(name ⇒ sendEvent(currentAsMap.get(name).get, "undeployed"))
-    selectedAsMap.keySet.diff(currentAsMap.keySet).foreach(name ⇒ sendEvent(selectedAsMap.get(name).get, "deployed"))
+    currentAsMap.keySet.diff(selectedAsMap.keySet).foreach(name ⇒ sendEvent(currentAsMap(name), "undeployed"))
+    selectedAsMap.keySet.diff(currentAsMap.keySet).foreach(name ⇒ sendEvent(selectedAsMap(name), "deployed"))
 
     current = selected
     current
@@ -230,6 +218,6 @@ class GatewaySynchronizationActor extends CommonSupportForActors with ArtifactSu
   private def sendEvent(gateway: Gateway, event: String) = {
     log.info(s"Gateway event: ${gateway.name} - $event")
     val tags = Set(s"gateways${Event.tagDelimiter}${gateway.name}", event)
-    IoC.actorFor[PulseActor] ! Publish(Event(tags, content = gateway), publishEventValue = true)
+    IoC.actorFor[PulseActor] ! Publish(Event(tags, gateway), publishEventValue = true)
   }
 }
