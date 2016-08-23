@@ -38,6 +38,7 @@ trait HaProxyAclResolver extends ConditionDefinitionParser with BooleanFlatter {
   private def load(value: String) = Try(parse(value)).getOrElse(Value(value))
 
   private def acls(node: AstNode): AstNode = node match {
+    case PathPrefix(value)           ⇒ AclNode(s"path_beg $value")
     case Host(value)                 ⇒ AclNode(s"hdr_str(host) $value")
     case Cookie(value)               ⇒ AclNode(s"cook($value) -m found")
     case Header(value)               ⇒ AclNode(s"hdr_cnt($value) gt 0")

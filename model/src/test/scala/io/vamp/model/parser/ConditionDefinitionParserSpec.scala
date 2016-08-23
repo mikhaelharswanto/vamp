@@ -40,6 +40,21 @@ class ConditionDefinitionParserSpec extends FlatSpec with Matchers with Conditio
     parse(" ( User-Agent == Firefox ) ") shouldBe UserAgent("Firefox")
   }
 
+  it should "resolve url path" in {
+    parse("Path-Prefix == /app1") shouldBe PathPrefix("/app1")
+    parse("Path-Prefix != /app1") shouldBe Negation(PathPrefix("/app1"))
+
+    parse("Path-Prefix is /app1") shouldBe PathPrefix("/app1")
+    parse("Path-Prefix not /app1") shouldBe Negation(PathPrefix("/app1"))
+    parse("Path-Prefix misses /app1") shouldBe Negation(PathPrefix("/app1"))
+
+    parse("Path-Prefix has /app1") shouldBe PathPrefix("/app1")
+    parse("Path-Prefix contains /app1") shouldBe PathPrefix("/app1")
+
+    parse("! Path-Prefix is /app1") shouldBe Negation(PathPrefix("/app1"))
+    parse("not Path-Prefix is /app1") shouldBe Negation(PathPrefix("/app1"))
+  }
+
   it should "resolve host" in {
     parse("host == localhost") shouldBe Host("localhost")
     parse("host != localhost") shouldBe Negation(Host("localhost"))

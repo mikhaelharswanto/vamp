@@ -4,6 +4,8 @@ import org.parboiled.scala._
 
 sealed trait ConditionDefinitionOperand extends Operand
 
+case class PathPrefix(value: String) extends ConditionDefinitionOperand
+
 case class Host(value: String) extends ConditionDefinitionOperand
 
 case class Cookie(value: String) extends ConditionDefinitionOperand
@@ -19,11 +21,19 @@ case class HeaderContains(name: String, value: String) extends ConditionDefiniti
 trait ConditionDefinitionParser extends BooleanParser {
 
   override def Operand: Rule1[AstNode] = rule {
-    HostOperand | UserAgentOperand | HeaderOperand | CookieOperand | CookieContainsOperand | HeaderContainsOperand | ValueOperand
+    UrlPathBeginOperand | HostOperand | UserAgentOperand | HeaderOperand | CookieOperand | CookieContainsOperand | HeaderContainsOperand | ValueOperand
   }
 
   override def ValueOperand: Rule1[AstNode] = rule {
     OptionalWhiteSpace ~ "<" ~ oneOrMore(noneOf("<>")) ~> ((value: String) ⇒ Value(value.trim)) ~ ">"
+  }
+
+  def UrlPathBeginOperand = rule {
+    UrlPathString ~ ComparisonOperator ~ String ~~> ((equal: Boolean, value: String) ⇒ if (equal) PathPrefix(value) else Negation(PathPrefix(value)))
+  }
+
+  def UrlPathString = rule {
+    OptionalWhiteSpace ~ ignoreCase("path") ~ optional(anyOf("-.")) ~ ignoreCase("prefix") ~ OptionalWhiteSpace
   }
 
   def HostOperand = rule {

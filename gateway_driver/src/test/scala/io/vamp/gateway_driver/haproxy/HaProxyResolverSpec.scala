@@ -21,6 +21,10 @@ class HaProxyResolverSpec extends FlatSpec with Matchers with HaProxyAclResolver
       HaProxyAcls(List(Acl("58966872db928351", "hdr_str(host) localhost")), Some("58966872db928351"))
     }
 
+    resolve("Path-Prefix == /app1" :: Nil) shouldBe Some {
+      HaProxyAcls(List(Acl("5e9eb61c28dbc0c8", "path_beg /app1")), Some("5e9eb61c28dbc0c8"))
+    }
+
     resolve("contains cookie vamp" :: Nil) shouldBe Some {
       HaProxyAcls(List(Acl("d2c606178591676a", "cook(vamp) -m found")), Some("d2c606178591676a"))
     }
