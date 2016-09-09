@@ -24,6 +24,8 @@ class EtcdStoreActor extends KeyValueStoreActor {
     )
   )
 
+  override protected def all(path: List[String]): Future[List[String]] = ???
+
   override protected def get(path: List[String]): Future[Option[String]] = {
     RestClient.get[Any](urlOf(path), RestClient.jsonHeaders, logError = false) recover { case _ ⇒ None } map {
       case map: Map[_, _] ⇒ map.asInstanceOf[Map[String, _]].get("node").map(_.asInstanceOf[Map[String, _]]).getOrElse(Map()).get("value").map(_.toString)
@@ -37,4 +39,5 @@ class EtcdStoreActor extends KeyValueStoreActor {
   }
 
   private def urlOf(path: List[String], recursive: Boolean = false) = s"$url/v2/keys${KeyValueStoreActor.pathToString(path)}${if (recursive) "?recursive=true" else ""}"
+
 }

@@ -1,18 +1,16 @@
 package io.vamp.persistence
 
-import akka.actor.{ ActorRef, ActorSystem, Props }
-import io.vamp.common.config.Config
+import akka.actor.{ ActorRef, ActorSystem }
 import io.vamp.common.akka.{ ActorBootstrap, IoC }
-import io.vamp.persistence.db.{ ElasticsearchPersistenceActor, InMemoryPersistenceActor, PersistenceActor }
-import io.vamp.persistence.kv.{ ConsulStoreActor, EtcdStoreActor, KeyValueStoreActor, ZooKeeperStoreActor }
+import io.vamp.common.config.Config
+import io.vamp.persistence.db.{ ElasticsearchPersistenceActor, InMemoryPersistenceActor, KeyValuePersistenceActor, PersistenceActor }
+import io.vamp.persistence.kv.{ EtcdStoreActor, KeyValueStoreActor, ZooKeeperStoreActor }
 
 object PersistenceBootstrap extends ActorBootstrap {
 
   val databaseType = Config.string("vamp.persistence.database.type")
 
   val keyValueStoreType = Config.string("vamp.persistence.key-value-store.type")
-
-  val persistenceDBMailbox = "vamp.persistence.mailbox"
 
   def createActors(implicit actorSystem: ActorSystem): List[ActorRef] = {
 
@@ -21,11 +19,15 @@ object PersistenceBootstrap extends ActorBootstrap {
     val dbActor = databaseType match {
       case "in-memory" ⇒
         IoC.alias[PersistenceActor, InMemoryPersistenceActor]
-        IoC.createActor(Props(classOf[InMemoryPersistenceActor]).withMailbox(persistenceDBMailbox))
+        IoC.createActor[InMemoryPersistenceActor]
+
+      case "key-value" ⇒
+        IoC.alias[PersistenceActor, KeyValuePersistenceActor]
+        IoC.createActor[KeyValuePersistenceActor]
 
       case "elasticsearch" ⇒
         IoC.alias[PersistenceActor, ElasticsearchPersistenceActor]
-        IoC.createActor(Props(classOf[ElasticsearchPersistenceActor]).withMailbox(persistenceDBMailbox))
+        IoC.createActor[ElasticsearchPersistenceActor]
 
       case other ⇒ throw new RuntimeException(s"Unsupported database type: $other")
     }
@@ -34,10 +36,6 @@ object PersistenceBootstrap extends ActorBootstrap {
       case "etcd" ⇒
         IoC.alias[KeyValueStoreActor, EtcdStoreActor]
         IoC.createActor[EtcdStoreActor]
-
-      case "consul" ⇒
-        IoC.alias[KeyValueStoreActor, ConsulStoreActor]
-        IoC.createActor[ConsulStoreActor]
 
       case "zookeeper" ⇒
         IoC.alias[KeyValueStoreActor, ZooKeeperStoreActor]
