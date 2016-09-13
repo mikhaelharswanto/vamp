@@ -41,7 +41,7 @@ object YamlSource {
   implicit def file2YamlInput(file: File): YamlSource = FileSource(file)
 }
 
-trait YamlReader[T] extends ModelNotificationProvider with NameValidator {
+trait   YamlReader[T] extends ModelNotificationProvider with NameValidator {
 
   def read(input: YamlSource): T = input match {
     case ReaderSource(reader) ⇒ readSource(reader)
@@ -50,10 +50,32 @@ trait YamlReader[T] extends ModelNotificationProvider with NameValidator {
     case FileSource(file)     ⇒ readSource(Source.fromFile(file).bufferedReader())
   }
 
+  protected def unmarshal(input: YamlSource): Either[YamlSourceReader, List[YamlSourceReader]] = {
+
+    def unmarshal(reader: Reader): Either[YamlSourceReader, List[YamlSourceReader]] = load(reader) match {
+      case yaml: YamlSourceReader ⇒ Left(yaml)
+      case list: List[_] ⇒
+        Right(list.map {
+          case yaml: YamlSourceReader ⇒ yaml
+          case any                    ⇒ error(any, classOf[YamlSourceReader])
+        })
+      case any ⇒ error(any, classOf[List[YamlSourceReader]])
+    }
+
+    input match {
+      case ReaderSource(reader) ⇒ unmarshal(reader)
+      case StreamSource(stream) ⇒ unmarshal(Source.fromInputStream(stream).bufferedReader())
+      case StringSource(string) ⇒ unmarshal(new StringReader(string))
+      case FileSource(file)     ⇒ unmarshal(Source.fromFile(file).bufferedReader())
+    }
+  }
+
   private def readSource(reader: Reader): T = load(reader, {
     case yaml: YamlSourceReader ⇒ read(yaml)
     case any                    ⇒ throwException(UnexpectedTypeError("/", classOf[YamlSourceReader], if (any != null) any.getClass else classOf[Object]))
   })
+
+  private def error(any: Any, expected: Class[_]) = throwException(UnexpectedTypeError("/", expected, if (any != null) any.getClass else classOf[Object]))
 
   protected def load(reader: Reader, process: PartialFunction[Any, T]): T = {
     def convert(any: Any): Any = any match {
@@ -96,6 +118,51 @@ trait YamlReader[T] extends ModelNotificationProvider with NameValidator {
       reader.close()
     }
   }
+
+  private def load(reader: Reader): Any = {
+
+    def convert(any: Any): Any = any match {
+      case source: java.util.Map[_, _] ⇒
+        // keeping the order
+        val map = new mutable.LinkedHashMap[String, Any]()
+        source.entrySet().asScala.foreach(entry ⇒ map += entry.getKey.toString -> convert(entry.getValue))
+        map
+      case source: java.util.List[_]     ⇒ source.asScala.map(convert).toList
+      case source: java.lang.Iterable[_] ⇒ source.asScala.map(convert).toList
+      case source                        ⇒ source
+    }
+
+    def flatten(any: Any, acc: List[Any]): List[Any] = any match {
+      case l: List[_] ⇒ l.flatMap(flatten(_, acc))
+      case other      ⇒ acc :+ other
+    }
+
+    val parsed = Try {
+      flatten(
+        convert(
+          yaml.loadAll(
+            reader
+          )
+        ), Nil
+      )
+    } recover {
+      case e: Exception ⇒ invalidYaml(e)
+    } get
+
+    val result = parsed match {
+      case map: collection.Map[_, _] ⇒ YamlSourceReader(map.toMap.asInstanceOf[Map[String, _]])
+      case list: List[_] ⇒
+        list.map {
+          case map: collection.Map[_, _] ⇒ YamlSourceReader(map.toMap.asInstanceOf[Map[String, _]])
+          case any                       ⇒ any
+        }
+      case any ⇒ any
+    }
+
+    result
+  }
+
+  private def invalidYaml(e: Exception) = throwException(YamlParsingError(e.getMessage.replaceAll("java object", "resource"), e))
 
   private def yaml = {
     new Yaml(new Constructor() {
@@ -367,5 +434,17 @@ trait ArgumentReader {
   def validateArguments(argument: List[Argument]) = argument.foreach { argument ⇒
     if (argument.privileged && Try(argument.value.toBoolean).isFailure) throwException(InvalidArgumentValueError(argument))
   }
+}
+
+object ArtifactListReader extends YamlReader[List[YamlSourceReader]] {
+
+  override def read(input: YamlSource): List[YamlSourceReader] = {
+    unmarshal(input) match {
+      case Left(item)   ⇒ List(item)
+      case Right(items) ⇒ items
+    }
+  }
+
+  override protected def parse(implicit source: YamlSourceReader): List[YamlSourceReader] = throw new NotImplementedError
 }
 
