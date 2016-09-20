@@ -2,6 +2,7 @@ package io.vamp.lifter.vga
 
 import akka.pattern.ask
 import io.vamp.common.akka._
+import io.vamp.common.config.Config
 import io.vamp.common.vitals.InfoRequest
 import io.vamp.container_driver.DockerAppDriver.{ DeployDockerApp, RetrieveDockerApp, UndeployDockerApp }
 import io.vamp.container_driver.marathon._
@@ -28,6 +29,10 @@ object VgaMarathonSynchronizationActor {
 }
 
 class VgaMarathonSynchronizationActor extends VgaSynchronizationActor with ArtifactSupport with ArtifactPaginationSupport {
+
+  private val configuration = Config.config("vamp.lifter.vamp-gateway-agent")
+
+  val healthCheckCommand = configuration.string("health-check-command")
 
   import VgaMarathonSynchronizationActor._
 
@@ -88,7 +93,8 @@ class VgaMarathonSynchronizationActor extends VgaSynchronizationActor with Artif
       environmentVariables = Map(),
       command = Nil,
       arguments = command,
-      constraints = List(List("hostname", "UNIQUE"))
+      constraints = List(List("hostname", "UNIQUE")),
+      healthChecks = List(Map("protocol" -> "COMMAND", "command" -> Map("value" -> healthCheckCommand)))
     )
   }
 }

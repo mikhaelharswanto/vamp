@@ -140,7 +140,8 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver {
       if (app.command.nonEmpty) Option(app.command.mkString(" ")) else None,
       app.arguments,
       app.labels,
-      app.constraints
+      app.constraints,
+      app.healthChecks
     )
     sendRequest(update, app.id, Extraction.decompose(purge(marathonApp)))
   }

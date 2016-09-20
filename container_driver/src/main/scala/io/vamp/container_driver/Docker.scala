@@ -16,4 +16,5 @@ case class DockerApp(
   command: List[String] = Nil,
   arguments: List[String] = Nil,
   labels: Map[String, String] = Map(),
-  constraints: List[List[String]] = Nil)
+  constraints: List[List[String]] = Nil,
+  healthChecks: List[Map[String, Any]] = Nil)

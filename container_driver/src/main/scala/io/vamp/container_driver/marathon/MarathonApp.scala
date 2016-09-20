@@ -12,6 +12,7 @@ case class MarathonApp(
   cmd: Option[String],
   args: List[String] = Nil,
   labels: Map[String, String] = Map(),
-  constraints: List[List[String]] = Nil)
+  constraints: List[List[String]] = Nil,
+  healthChecks: List[Map[String, Any]] = Nil)
 
 case class Container(docker: Docker, `type`: String = "DOCKER")
