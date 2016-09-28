@@ -67,9 +67,13 @@ trait PersistenceMultiplexer {
         Future.successful(gateway.port)
       }
 
-      service ← get(gateway.name, classOf[GatewayServiceAddress]).map {
-        case Some(gp: GatewayServiceAddress) ⇒ Option(GatewayService(gp.host, gateway.port.copy(number = gp.port) match { case p ⇒ p.copy(value = Option(p.toValue)) }))
-        case _                               ⇒ None
+      service ← if (!gateway.name.isEmpty) {
+        get(gateway.name, classOf[GatewayServiceAddress]).map {
+          case Some(gp: GatewayServiceAddress) ⇒ Option(GatewayService(gp.host, gateway.port.copy(number = gp.port) match { case p ⇒ p.copy(value = Option(p.toValue)) }))
+          case _                               ⇒ None
+        }
+      } else {
+        Future.successful(None)
       }
 
       routes ← Future.sequence(gateway.routes.map {
@@ -80,7 +84,11 @@ trait PersistenceMultiplexer {
         case route ⇒ Future.successful(route)
       })
 
-      deployed ← get(gateway.name, classOf[GatewayDeploymentStatus]).map(_.getOrElse(GatewayDeploymentStatus("", deployed = false)).asInstanceOf[GatewayDeploymentStatus])
+      deployed ← if (!gateway.name.isEmpty) {
+        get(gateway.name, classOf[GatewayDeploymentStatus]).map(_.getOrElse(GatewayDeploymentStatus("", deployed = false)).asInstanceOf[GatewayDeploymentStatus])
+      } else {
+        Future.successful(GatewayDeploymentStatus("", false))
+      }
     } yield {
       Option(gateway.copy(port = port, service = service, routes = routes, deployed = deployed.deployed))
     }
