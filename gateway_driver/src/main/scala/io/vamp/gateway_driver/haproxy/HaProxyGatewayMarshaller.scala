@@ -196,7 +196,8 @@ trait HaProxyGatewayMarshaller extends GatewayMarshaller {
   }
 
   private def rewrites(route: DefaultRoute): List[Rewrite] = route.rewrites.collect {
-    case PathRewrite(_, p, c) ⇒ Rewrite(p, if (c.matches("^\\s*\\{.*\\}\\s*$")) c else s"{ $c }")
+    case PathRewrite(_, p, Some(c)) ⇒ Rewrite(p, Some(if (c.matches("^\\s*\\{.*\\}\\s*$")) c else s"{ $c }"))
+    case PathRewrite(_, p, None)    ⇒ Rewrite(p, None)
   }
 
   private def backendFor(lookup: String*)(implicit backends: List[Backend]): Backend = lookup.mkString match {

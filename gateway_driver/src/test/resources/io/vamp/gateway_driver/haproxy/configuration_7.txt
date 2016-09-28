@@ -74,6 +74,8 @@ backend 62a11db802baf59987a3ece9e10d8754eca16a09
 
   http-request set-path /img/%[path] if { p_ext_jpg path_end -i .jpg } !{ p_folder_images path_beg -i /images/ }
 
+  http-request set-path /i/%[path]
+
   option forwardfor
 
   # server: 64435a223bddf1fa589135baa5e228090279c032

@@ -8,3 +8,6 @@ routes:
     - path: a if b
   web/port2:
     weight: 100%
+  web/port3:
+    rewrites:
+    - path: a

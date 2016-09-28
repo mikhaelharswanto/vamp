@@ -46,7 +46,7 @@ object Acl {
 
 case class Acl(name: String, definition: String)
 
-case class Rewrite(path: String, condition: String)
+case class Rewrite(path: String, condition: Option[String])
 
 case class ProxyServer(name: String, lookup: String, unixSock: String, weight: Int)
 

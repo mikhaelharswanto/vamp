@@ -59,7 +59,7 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
         mode = Mode.http,
         proxyServers = Nil,
         servers = servers2,
-        rewrites = Rewrite("/images/%[path]", "p_ext_jpg path_end -i .jpg") :: Nil,
+        rewrites = Rewrite("/images/%[path]", Some("p_ext_jpg path_end -i .jpg")) :: Nil,
         sticky = false,
         balance = "roundrobin"
       ) :: Nil
@@ -379,11 +379,15 @@ trait HaProxyGatewayMarshallerSpec extends FlatSpec with Matchers with HaProxyGa
             PathRewrite(
               name = "",
               path = "/images/%[path]",
-              condition = "p_ext_jpg path_end -i .jpg"
+              condition = Some("p_ext_jpg path_end -i .jpg")
             ), PathRewrite(
               name = "",
               path = "/img/%[path]",
-              condition = "{ p_ext_jpg path_end -i .jpg } !{ p_folder_images path_beg -i /images/ }"
+              condition = Some("{ p_ext_jpg path_end -i .jpg } !{ p_folder_images path_beg -i /images/ }")
+            ), PathRewrite(
+              name = "",
+              path = "/i/%[path]",
+              condition = None
             )),
           balance = None,
           targets = InternalRouteTarget(

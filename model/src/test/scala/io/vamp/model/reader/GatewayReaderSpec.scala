@@ -61,8 +61,9 @@ class GatewayReaderSpec extends FlatSpec with Matchers with ReaderSpec {
       'port(Port("8080", None, Some("8080"))),
       'sticky(None),
       'routes(List(
-        DefaultRoute("", GatewayPath("web/port1", List("web", "port1")), None, None, Nil, List(PathRewrite("", "a", "b")), None),
-        DefaultRoute("", GatewayPath("web/port2", List("web", "port2")), Some(Percentage(100)), None, Nil, Nil, None)
+        DefaultRoute("", GatewayPath("web/port1", List("web", "port1")), None, None, Nil, List(PathRewrite("", "a", Some("b"))), None),
+        DefaultRoute("", GatewayPath("web/port2", List("web", "port2")), Some(Percentage(100)), None, Nil, Nil, None),
+        DefaultRoute("", GatewayPath("web/port3", List("web", "port3")), None, None, Nil, List(PathRewrite("", "a", None)), None)
       ))
     )
   }

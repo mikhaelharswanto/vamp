@@ -89,7 +89,11 @@ backend {{ backend.lookup }}
   {% endif -%}
 
   {% for rewrite in backend.rewrites %}
-  http-request set-path {{ rewrite.path }} if {{ rewrite.condition }}
+  {% if (rewrite.condition.isEmpty) %}
+  http-request set-path {{ rewrite.path }}
+  {% else -%}
+  http-request set-path {{ rewrite.path }} if {{ rewrite.condition.get }}
+  {% endif -%}
   {% endfor -%}
 
   {% for server in backend.proxyServers %}

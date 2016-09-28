@@ -123,14 +123,17 @@ case class RewriteReference(name: String) extends Reference with Rewrite
 
 object PathRewrite {
 
-  private val matcher = "^(?i)(.+) if (.+)$".r
+  private val matcher = "^(?i)([^\\s]+)(\\s+if\\s+(.+))?$".r
 
   def parse(name: String, definition: String): Option[PathRewrite] = definition match {
-    case matcher(path, condition) ⇒ Option(PathRewrite(name, path, condition))
-    case _                        ⇒ None
+    case matcher(path, _, condition) ⇒ Option(PathRewrite(name, path, Option(condition)))
+    case _                           ⇒ None
   }
 }
 
-case class PathRewrite(name: String, path: String, condition: String) extends Rewrite {
-  val definition = s"$path if $condition"
+case class PathRewrite(name: String, path: String, condition: Option[String]) extends Rewrite {
+  val definition = condition match {
+    case Some(c) ⇒ s"$path if $condition"
+    case _       ⇒ s"$path"
+  }
 }

@@ -194,7 +194,7 @@ trait Generate extends Parameters with IoUtils {
 
   private def emptyCondition = DefaultCondition(name = "", definition = "")
 
-  private def emptyRewrite = PathRewrite(name = "", path = "", condition = "")
+  private def emptyRewrite = PathRewrite(name = "", path = "", condition = None)
 
   private def emptyScaleCpuEscalation = ScaleCpuEscalation(name = "", minimum = 0, maximum = 0, scaleBy = 0, targetCluster = None)
 
