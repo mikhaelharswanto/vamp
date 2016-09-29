@@ -138,9 +138,16 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
       deploy(deployment, deploymentCluster, deploymentService, containers)
     }
 
+    def convert(server: ContainerInstance): DeploymentInstance = {
+      val ports = deploymentService.breed.ports.map(_.name) zip server.ports
+      DeploymentInstance(server.name, server.host, ports.toMap, server.deployed)
+    }
+
     containers match {
-      case None     ⇒ redeploy()
-      case Some(cs) ⇒ if (!matchingServers(deploymentService, cs) || !matchingScale(deploymentService, cs)) redeploy()
+      case None ⇒ redeploy()
+      case Some(cs) ⇒
+        if (!matchingServers(deploymentService, cs) || !matchingScale(deploymentService, cs)) redeploy()
+        else persist(DeploymentServiceInstances(serviceArtifactName(deployment, deploymentCluster, deploymentService), cs.instances.map(convert)))
     }
   }
 

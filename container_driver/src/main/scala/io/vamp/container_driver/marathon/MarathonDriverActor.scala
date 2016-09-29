@@ -152,7 +152,7 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver {
   }
 
   private def sendRequest(update: Boolean, id: String, payload: JValue) = update match {
-    case true  ⇒ RestClient.put[Any](s"$marathonUrl/v2/apps/$id?force=true", payload)
+    case true  ⇒ RestClient.put[Any](s"$marathonUrl/v2/apps/$id", payload)
     case false ⇒ RestClient.post[Any](s"$marathonUrl/v2/apps", payload)
   }
 

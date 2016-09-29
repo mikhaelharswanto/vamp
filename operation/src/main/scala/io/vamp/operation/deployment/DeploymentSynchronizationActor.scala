@@ -17,8 +17,6 @@ import io.vamp.model.resolver.DeploymentTraitResolver
 import io.vamp.operation.deployment.DeploymentSynchronizationActor.SynchronizeAll
 import io.vamp.operation.notification.{ DeploymentTimeoutError, OperationNotificationProvider }
 import io.vamp.persistence.db.{ ArtifactPaginationSupport, PersistenceActor }
-import io.vamp.persistence.operation.DeploymentPersistence._
-import io.vamp.persistence.operation.DeploymentServiceState
 
 class DeploymentSynchronizationSchedulerActor extends SchedulerActor with OperationNotificationProvider {
 
@@ -73,7 +71,6 @@ class DeploymentSynchronizationActor extends ArtifactPaginationSupport with Comm
   private def withError(deployment: Deployment): Boolean = {
     lazy val now = OffsetDateTime.now()
     lazy val config = Config.config("vamp.operation.synchronization.timeout")
-    lazy val deploymentTimeout = config.duration("ready-for-deployment")
     lazy val undeploymentTimeout = config.duration("ready-for-undeployment")
 
     def handleTimeout(service: DeploymentService) = {
@@ -81,9 +78,7 @@ class DeploymentSynchronizationActor extends ArtifactPaginationSupport with Comm
       reportException(notification)
       actorFor[PersistenceActor] ! PersistenceActor.Update(deployment.copy(clusters = deployment.clusters.map(cluster ⇒ cluster.copy(services = cluster.services.map({ s ⇒
         if (s.breed.name == service.breed.name) {
-          val updated = s.copy(state = State(s.state.intention, Failure(notification)))
-          actorFor[PersistenceActor] ! PersistenceActor.Update(DeploymentServiceState(serviceArtifactName(deployment, cluster, updated), updated.state))
-          updated
+          s.copy(state = State(s.state.intention, Failure(notification)))
         } else s
       })))))
       true
@@ -91,7 +86,6 @@ class DeploymentSynchronizationActor extends ArtifactPaginationSupport with Comm
 
     deployment.clusters.flatMap(_.services).exists { service ⇒
       service.state.intention match {
-        case Intention.Deploy   ⇒ if (!service.state.isDone && now.minus(deploymentTimeout.toSeconds, ChronoUnit.SECONDS).isAfter(service.state.since)) handleTimeout(service) else false
         case Intention.Undeploy ⇒ if (!service.state.isDone && now.minus(undeploymentTimeout.toSeconds, ChronoUnit.SECONDS).isAfter(service.state.since)) handleTimeout(service) else false
         case _                  ⇒ service.state.step.isInstanceOf[Failure]
       }
