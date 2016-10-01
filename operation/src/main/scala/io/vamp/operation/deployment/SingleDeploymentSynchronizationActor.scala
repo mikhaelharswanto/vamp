@@ -1,8 +1,9 @@
 package io.vamp.operation.deployment
 
-import io.vamp.common.config.Config
+import akka.actor.ActorLogging
 import io.vamp.common.akka.IoC._
 import io.vamp.common.akka.{ CommonSupportForActors, IoC }
+import io.vamp.common.config.Config
 import io.vamp.container_driver.{ ContainerDriverActor, ContainerInstance, ContainerService, Containers }
 import io.vamp.model.artifact.DeploymentService.State.Intention
 import io.vamp.model.artifact.DeploymentService.State.Step.{ Done, Update }
@@ -22,7 +23,7 @@ object SingleDeploymentSynchronizationActor {
 
 }
 
-class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation with ArtifactPaginationSupport with CommonSupportForActors with DeploymentTraitResolver with OperationNotificationProvider {
+class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation with ArtifactPaginationSupport with CommonSupportForActors with DeploymentTraitResolver with OperationNotificationProvider with ActorLogging {
 
   import DeploymentPersistence._
   import PulseEventTags.Deployments._
@@ -42,6 +43,8 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
   }
 
   private def synchronize(containerService: ContainerService) = {
+
+    log.info(s"Synchronizing deployment ${containerService.deployment.name}...")
 
     containerService.deployment.clusters.find { cluster ⇒ cluster.services.exists(_.breed.name == containerService.service.breed.name) } match {
       case Some(cluster) ⇒
@@ -80,10 +83,13 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
 
       case Some(cs) ⇒
         if (!matchingScale(deploymentService, cs) || !matchingEnvironmentVariables(deploymentService, cs)) {
+          log.info(s"Deploying ${deployment.name}, contacting driver to update deployment...")
           deployTo(update = true, deploymentService.copy(environmentVariables = resolveEnvironmentVariables(deployment, deploymentCluster, deploymentService)))
         } else if (!matchingServers(deploymentService, cs)) {
+          log.info(s"Deploying ${deployment.name}, updating service instances...")
           persist(DeploymentServiceInstances(serviceArtifactName(deployment, deploymentCluster, deploymentService), cs.instances.map(convert)))
         } else {
+          log.info(s"Deploying ${deployment.name}, done...")
           persist(DeploymentServiceState(serviceArtifactName(deployment, deploymentCluster, deploymentService), deploymentService.state.copy(step = Done())))
           updateGateways(deployment, deploymentCluster)
           publishDeployed(deployment, deploymentCluster, deploymentService)
@@ -133,21 +139,15 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
   private def redeployIfNeeded(deployment: Deployment, deploymentCluster: DeploymentCluster, deploymentService: DeploymentService, containers: Option[Containers]) = {
 
     def redeploy() = {
+      log.info(s"Redeploying ${deployment.name}...")
       persist(DeploymentServiceState(serviceArtifactName(deployment, deploymentCluster, deploymentService), deploymentService.state.copy(step = Update())))
       publishRedeploy(deployment, deploymentCluster, deploymentService)
       deploy(deployment, deploymentCluster, deploymentService, containers)
     }
 
-    def convert(server: ContainerInstance): DeploymentInstance = {
-      val ports = deploymentService.breed.ports.map(_.name) zip server.ports
-      DeploymentInstance(server.name, server.host, ports.toMap, server.deployed)
-    }
-
     containers match {
-      case None ⇒ redeploy()
-      case Some(cs) ⇒
-        if (!matchingServers(deploymentService, cs) || !matchingScale(deploymentService, cs)) redeploy()
-        else persist(DeploymentServiceInstances(serviceArtifactName(deployment, deploymentCluster, deploymentService), cs.instances.map(convert)))
+      case None     ⇒ redeploy()
+      case Some(cs) ⇒ if (!matchingServers(deploymentService, cs) || !matchingScale(deploymentService, cs)) redeploy()
     }
   }
 

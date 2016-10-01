@@ -61,6 +61,8 @@ class DeploymentSynchronizationActor extends ArtifactPaginationSupport with Comm
 
     def sendTo(actor: ActorRef) = actor ! SingleDeploymentSynchronizationActor.Synchronize(containerService)
 
+    log.info(s"Received container service data, now synchronizing ${containerService.deployment.name}...")
+
     val name = s"deployment-synchronization-${containerService.deployment.lookupName}"
     context.child(name) match {
       case Some(actor) ⇒ sendTo(actor)

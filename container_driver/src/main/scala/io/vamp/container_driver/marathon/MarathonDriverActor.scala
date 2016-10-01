@@ -1,5 +1,6 @@
 package io.vamp.container_driver.marathon
 
+import akka.actor.ActorLogging
 import io.vamp.common.config.Config
 import io.vamp.common.crypto.Hash
 import io.vamp.common.http.RestClient
@@ -32,7 +33,7 @@ case class MesosInfo(frameworks: Any, slaves: Any)
 
 case class MarathonDriverInfo(mesos: MesosInfo, marathon: Any)
 
-class MarathonDriverActor extends ContainerDriverActor with ContainerDriver {
+class MarathonDriverActor extends ContainerDriverActor with ContainerDriver with ActorLogging {
 
   import ContainerDriverActor._
   import MarathonDriverActor._
@@ -105,7 +106,10 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver {
               ContainerService(deployment, service, Option(Containers(scale, instances, app.env.toList)))
             case None ⇒ ContainerService(deployment, service, None)
           }
-      } foreach { cs ⇒ replyTo ! cs }
+      } foreach { cs ⇒
+        log.info(s"Mapped deployment ${cs.deployment.name} with Marathon app.")
+        replyTo ! cs
+      }
     }
   }
 
