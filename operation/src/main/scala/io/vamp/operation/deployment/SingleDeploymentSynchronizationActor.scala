@@ -147,7 +147,7 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
 
     containers match {
       case None     ⇒ redeploy()
-      case Some(cs) ⇒ if (!matchingServers(deploymentService, cs) || !matchingScale(deploymentService, cs)) redeploy()
+      case Some(cs) ⇒ if (!matchingServers(deploymentService, cs) || !matchingScale(deploymentService, cs) || !matchingEnvironmentVariables(deploymentService, cs)) redeploy()
     }
   }
 
