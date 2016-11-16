@@ -1,0 +1,14 @@
+name: nomadic-frostbite
+
+gateways:
+  8080: supersonic/port
+
+clusters:
+  supersonic:
+    breed: sava1
+    scale: large
+    gateways:
+      routes:
+        sava1:
+          filters:
+            condition: "user.agent == android"

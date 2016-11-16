@@ -419,6 +419,15 @@ class BlueprintReaderSpec extends FlatSpec with Matchers with ReaderSpec {
     )
   }
 
+  it should "expand single filter to a list for backward compatibility" in {
+    BlueprintReader.read(res("blueprint/blueprint46a.yml")) should have(
+      'name("nomadic-frostbite"),
+      'clusters(List(Cluster("supersonic", List(Service(BreedReference("sava1"), Nil, Some(ScaleReference("large")), Nil)), List(Gateway("", Port("", None, None), None, None, Nil, List(DefaultRoute("", "sava1", None, None, List(DefaultCondition("", "user.agent == android")), Nil, None)))), None))),
+      'gateways(List(Gateway("", Port("8080", None, Some("8080")), None, None, Nil, List(DefaultRoute("", "supersonic/port", None, None, Nil, Nil, None))))),
+      'environmentVariables(Nil)
+    )
+  }
+
   it should "parse dialects" in {
     BlueprintReader.read(res("blueprint/blueprint47.yml")) should have(
       'name("nomadic-frostbite"),

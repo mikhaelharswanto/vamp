@@ -127,7 +127,15 @@ object RouteReader extends YamlReader[Route] with WeakReferenceYamlReader[Route]
 
   override protected def createDefault(implicit source: YamlSourceReader): Route = {
     source.flatten({ entry ⇒ entry == "instances" })
-    DefaultRoute(name, Route.noPath, <<?[Percentage]("weight"), <<?[Percentage]("condition_strength"), conditions, rewrites, balance)
+    val conds = conditions match {
+      case Nil ⇒ filters
+      case default ⇒  default
+    }
+    val strength: Option[Percentage] = <<?[Percentage]("condition_strength") match {
+      case None ⇒ <<?[Percentage]("filter_strength")
+      case default ⇒ default
+    }
+    DefaultRoute(name, Route.noPath, <<?[Percentage]("weight"), strength, conds, rewrites, balance)
   }
 
   override protected def expand(implicit source: YamlSourceReader) = {
@@ -140,9 +148,15 @@ object RouteReader extends YamlReader[Route] with WeakReferenceYamlReader[Route]
     }
 
     list("conditions")
+    list("filters")
     list("rewrites")
 
     super.expand
+  }
+
+  protected def filters(implicit source: YamlSourceReader): List[Condition] = <<?[YamlList]("filters") match {
+    case None                 ⇒ List.empty[Condition]
+    case Some(list: YamlList) ⇒ list.map(ConditionReader.readReferenceOrAnonymous)
   }
 
   protected def conditions(implicit source: YamlSourceReader): List[Condition] = <<?[YamlList]("conditions") match {
@@ -193,7 +207,9 @@ trait GatewayMappingReader[T <: Artifact] extends YamlReader[List[T]] {
     val yaml = <<![YamlSourceReader](key :: Nil)
 
     <<?[Any](key :: "port") match {
-      case Some(value) ⇒ if (!acceptPort && !ignoreError) throwException(UnexpectedElement(Map[String, Any](key -> "port"), value.toString))
+      case Some(value) ⇒ if (!acceptPort && !ignoreError) {
+        throwException(UnexpectedElement(Map[String, Any](key -> "port"), value.toString))
+      }
       case None        ⇒ >>("port", key)(yaml)
     }
 
