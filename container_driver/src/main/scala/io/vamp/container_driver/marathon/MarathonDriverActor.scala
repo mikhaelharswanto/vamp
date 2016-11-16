@@ -107,7 +107,6 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver with
             case None ⇒ ContainerService(deployment, service, None)
           }
       } foreach { cs ⇒
-        log.info(s"Mapped deployment ${cs.deployment.name} with Marathon app.")
         replyTo ! cs
       }
     }

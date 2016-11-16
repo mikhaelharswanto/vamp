@@ -190,13 +190,13 @@ class GatewaySynchronizationActor extends CommonSupportForActors with ArtifactSu
 
   private def select: GatewayPipeline ⇒ List[Gateway] = { pipeline ⇒
 
-    def byDeploymentName(gateways: List[Gateway]) = gateways.filter(_.inner).groupBy(gateway ⇒ GatewayPath(gateway.name).segments.head)
+    def byDeploymentClusterName(gateways: List[Gateway]) = gateways.filter(_.inner).groupBy(gateway ⇒ GatewayPath(gateway.name).segments(1))
 
-    val currentByDeployment = byDeploymentName(current)
-    val deployable = byDeploymentName(pipeline.deployable)
-    val nonDeployable = byDeploymentName(pipeline.nonDeployable)
+    val currentByDeployment = byDeploymentClusterName(current)
+    val deployable = byDeploymentClusterName(pipeline.deployable)
+    val nonDeployable = byDeploymentClusterName(pipeline.nonDeployable)
 
-    val inner = byDeploymentName(pipeline.all).toList.flatMap {
+    val inner = byDeploymentClusterName(pipeline.all).toList.flatMap {
       case (d, g) if deployable.contains(d) && !nonDeployable.contains(d) ⇒ g
       case (d, g) if nonDeployable.contains(d) ⇒ currentByDeployment.getOrElse(d, Nil)
       case (_, g) ⇒ g
