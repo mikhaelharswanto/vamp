@@ -431,7 +431,7 @@ trait DeploymentMerger extends DeploymentOperation with DeploymentTraitResolver 
 
             if (!validateOnly) resetServiceArtifacts(deployment, blueprintCluster, service, state)
 
-            service.copy(scale = scale, dialects = service.dialects ++ bpService.dialects, environmentVariables = bpService.environmentVariables)
+            service.copy(scale = scale, breed = bpService.breed, dialects = service.dialects ++ bpService.dialects, environmentVariables = bpService.environmentVariables)
         }
       }
     }
