@@ -76,17 +76,19 @@ class KibanaDashboardActor extends ArtifactPaginationSupport with CommonSupportF
       GatewayPath(gateway.name).segments.length
     }
 
-    val panels = deploymentGateways.zipWithIndex.map {
-      case (gateway, index) ⇒
-        val lookup = GatewayMarshaller.lookup(gateway)
-        panel(s"${lookup}_count", s"${lookup}_tt", 3 * index + 1)
-    }.reduce((p1, p2) ⇒ s"$p1,$p2")
+    if (deploymentGateways.nonEmpty) {
+      val panels = deploymentGateways.zipWithIndex.map {
+        case (gateway, index) ⇒
+          val lookup = GatewayMarshaller.lookup(gateway)
+          panel(s"${lookup}_count", s"${lookup}_tt", 3 * index + 1)
+      }.reduce((p1, p2) ⇒ s"$p1,$p2")
 
-    es.get[ElasticsearchGetResponse](kibanaIndex, "dashboard", deployment.lookupName) map {
-      case response ⇒ if (!response.found || response._source.getOrElse("panelsJSON", "") != s"[${panels.replace("\\\"", "\"")}]") {
-        log.info(s"Updating Kibana dashboard: ${deployment.name}")
-        es.index[Any](kibanaIndex, "dashboard", deployment.lookupName, dashboard(deployment.name, panels))
-      } else log.info(s"Kibana dashboard up to date: ${deployment.name}")
+      es.get[ElasticsearchGetResponse](kibanaIndex, "dashboard", deployment.lookupName) map {
+        case response ⇒ if (!response.found || response._source.getOrElse("panelsJSON", "") != s"[${panels.replace("\\\"", "\"")}]") {
+          log.info(s"Updating Kibana dashboard: ${deployment.name}")
+          es.index[Any](kibanaIndex, "dashboard", deployment.lookupName, dashboard(deployment.name, panels))
+        } else log.info(s"Kibana dashboard up to date: ${deployment.name}")
+      }
     }
   }
 
