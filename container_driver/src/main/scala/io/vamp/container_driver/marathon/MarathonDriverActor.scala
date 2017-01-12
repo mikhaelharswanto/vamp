@@ -55,7 +55,7 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver with
     case u: Undeploy                ⇒ reply(undeploy(u.deployment, u.service))
     case DeployedGateways(gateways) ⇒ reply(deployedGateways(gateways))
 
-    case d: DeployDockerApp         ⇒ reply(deploy(d.app, d.update))
+    case d: DeployDockerApp         ⇒ reply(deploy(d.app, d.update, d.force))
     case u: UndeployDockerApp       ⇒ reply(undeploy(u.app))
     case r: RetrieveDockerApp       ⇒ reply(retrieve(r.app))
 
@@ -132,7 +132,7 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver with
     sendRequest(update, app.id, requestPayload(deployment, cluster, service, purge(app)))
   }
 
-  private def deploy(app: DockerApp, update: Boolean): Future[Any] = {
+  private def deploy(app: DockerApp, update: Boolean, force: Boolean = false): Future[Any] = {
     val marathonApp = MarathonApp(
       app.id,
       app.container.map(Container(_)),
@@ -146,7 +146,7 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver with
       app.constraints,
       app.healthChecks
     )
-    sendRequest(update, app.id, Extraction.decompose(purge(marathonApp)))
+    sendRequest(update, app.id, Extraction.decompose(purge(marathonApp)), force)
   }
 
   private def purge(app: MarathonApp): MarathonApp = {
@@ -154,8 +154,8 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver with
     if (app.args.isEmpty) app.copy(args = null) else app
   }
 
-  private def sendRequest(update: Boolean, id: String, payload: JValue) = update match {
-    case true  ⇒ RestClient.put[Any](s"$marathonUrl/v2/apps/$id", payload)
+  private def sendRequest(update: Boolean, id: String, payload: JValue, force: Boolean = false) = update match {
+    case true  ⇒ RestClient.put[Any](s"$marathonUrl/v2/apps/$id?force=$force", payload)
     case false ⇒ RestClient.post[Any](s"$marathonUrl/v2/apps", payload)
   }
 

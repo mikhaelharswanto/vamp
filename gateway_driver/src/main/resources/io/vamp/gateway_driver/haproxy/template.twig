@@ -32,7 +32,7 @@ backend {{ backend.lookup }}
   http-request set-header X-Forwarded-Port %[dst_port]
   {% for server in backend.servers %}
   # server: {{ server.name }}
-  server {{ server.lookup }} {{ server.url }}
+  server {{ server.lookup }} {{ server.url }} check
   {% endfor -%}
 {% endfor %}
 {% endif -%}

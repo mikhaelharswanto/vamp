@@ -69,7 +69,7 @@ class VgaMarathonSynchronizationActor extends VgaSynchronizationActor with Artif
       log.info(s"Initiating VGA deployment, number of instances: $count")
 
       if (count > 0)
-        IoC.actorFor[ContainerDriverActor] ! DeployDockerApp(request(count), update = instances != 0)
+        IoC.actorFor[ContainerDriverActor] ! DeployDockerApp(request(count), update = instances != 0, force = true)
       else
         IoC.actorFor[ContainerDriverActor] ! UndeployDockerApp(id)
     }

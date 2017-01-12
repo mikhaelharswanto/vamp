@@ -29,7 +29,7 @@ backend 541edef1fa775e786b31ce139a045182afe8e2b
   # http-request add-header X-Forwarded-Proto https if { ssl_fc }
 
   # server: deployment/cluster/port
-  server 541edef1fa775e786b31ce139a045182afe8e2b 111.222.333.444:33000
+  server 541edef1fa775e786b31ce139a045182afe8e2b 111.222.333.444:33000 check
 
 # Port mapping
 
