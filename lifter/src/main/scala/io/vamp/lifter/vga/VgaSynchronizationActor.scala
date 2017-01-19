@@ -9,8 +9,9 @@ trait VgaSynchronizationActor extends CommonSupportForActors with LifterNotifica
 
   protected implicit val timeout = ContainerDriverActor.timeout
 
-  protected val cpu = 0.1
-  protected val mem = 128
+  private val scale = Config.config("vamp.lifter.vamp-gateway-agent.scale")
+  protected val cpu = scale.double("cpu")
+  protected val mem = scale.int("memory")
 
   protected val config = Config.config("vamp.lifter.vamp-gateway-agent.synchronization")
 
