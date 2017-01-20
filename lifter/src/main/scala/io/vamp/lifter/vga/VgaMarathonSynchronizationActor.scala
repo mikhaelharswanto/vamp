@@ -94,7 +94,8 @@ class VgaMarathonSynchronizationActor extends VgaSynchronizationActor with Artif
       command = Nil,
       arguments = command,
       constraints = List(List("hostname", "UNIQUE")),
-      healthChecks = List(Map("protocol" -> "COMMAND", "command" -> Map("value" -> healthCheckCommand)))
+      healthChecks = List(Map("protocol" -> "COMMAND", "command" -> Map("value" -> healthCheckCommand))),
+      upgradeStrategy = Map("minimumHealthCapacity" -> 0.9, "maximumOverCapacity" -> 0)
     )
   }
 }

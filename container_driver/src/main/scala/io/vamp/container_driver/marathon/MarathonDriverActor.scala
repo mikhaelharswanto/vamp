@@ -144,7 +144,8 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver with
       app.arguments,
       app.labels,
       app.constraints,
-      app.healthChecks
+      app.healthChecks,
+      app.upgradeStrategy
     )
     sendRequest(update, app.id, Extraction.decompose(purge(marathonApp)), force)
   }
