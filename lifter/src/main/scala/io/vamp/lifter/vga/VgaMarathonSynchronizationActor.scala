@@ -59,7 +59,7 @@ class VgaMarathonSynchronizationActor extends VgaSynchronizationActor with Artif
     log.debug(s"Checking number of VGA's.")
 
     val count = info.mesos.slaves match {
-      case slaves: List[Map[String, _]] ⇒ slaves.count(s ⇒ s.getOrElse("active", false) == true)
+      case slaves: List[Map[String, _]] ⇒ slaves.size
       case _                            ⇒ 0
     }
 
