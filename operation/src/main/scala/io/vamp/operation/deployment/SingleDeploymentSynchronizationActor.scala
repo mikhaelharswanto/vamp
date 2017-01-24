@@ -85,9 +85,12 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
         if (!matchingScale(deploymentService, cs) || !matchingEnvironmentVariables(deploymentService, cs)) {
           log.info(s"Deploying ${deployment.name}, contacting driver to update deployment...")
           deployTo(update = true, deploymentService.copy(environmentVariables = resolveEnvironmentVariables(deployment, deploymentCluster, deploymentService)))
+          persist(DeploymentServiceInstances(serviceArtifactName(deployment, deploymentCluster, deploymentService), cs.instances.map(convert)))
+          updateGateways(deployment, deploymentCluster)
         } else if (!matchingServers(deploymentService, cs)) {
           log.info(s"Deploying ${deployment.name}, updating service instances...")
           persist(DeploymentServiceInstances(serviceArtifactName(deployment, deploymentCluster, deploymentService), cs.instances.map(convert)))
+          updateGateways(deployment, deploymentCluster)
         } else {
           log.info(s"Deploying ${deployment.name}, done...")
           persist(DeploymentServiceState(serviceArtifactName(deployment, deploymentCluster, deploymentService), deploymentService.state.copy(step = Done())))
