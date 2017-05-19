@@ -8,6 +8,9 @@ frontend virtual_hosts
   bind {{ haproxy.config.virtualHostsIp -}} : {{- haproxy.config.virtualHostsPort }}
   mode http
 
+  monitor-uri /
+  errorfile 200 /usr/local/vamp/200.http
+
   option httplog
   log-format {{ haproxy.config.httpLogFormat }}
   {% for frontend in haproxy.virtualHostFrontends %}
