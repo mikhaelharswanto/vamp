@@ -21,6 +21,8 @@ abstract class DaemonWorkflowDriver(implicit override val actorRefFactory: Actor
 
   private lazy val namePrefix = WorkflowDriver.config.string(namePrefixConfig)
 
+  private lazy val constraints = WorkflowDriver.config.string("constraints")
+
   override def request(replyTo: ActorRef, scheduledWorkflows: List[ScheduledWorkflow]): Unit = scheduledWorkflows.foreach { scheduled ⇒
     if (scheduled.trigger == DaemonTrigger) {
       driverActor ? RetrieveDockerApp(name(scheduled)) map {
@@ -73,7 +75,7 @@ abstract class DaemonWorkflowDriver(implicit override val actorRefFactory: Actor
       command = workflow.command.map(_.split(" ").toList).getOrElse(Nil),
       arguments = Nil,
       labels = Map("scheduled" -> scheduledWorkflow.name, "workflow" -> workflow.name),
-      constraints = Nil
+      constraints = constraints.split(",").map(_.split(":").toList).toList
     )
   }
 
