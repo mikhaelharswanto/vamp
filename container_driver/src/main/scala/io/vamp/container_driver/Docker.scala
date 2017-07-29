@@ -6,6 +6,11 @@ case class Docker(image: String, portMappings: List[DockerPortMapping], paramete
 
 case class DockerParameter(key: String, value: String)
 
+case class DockerVolume(
+  hostPath: String,
+  containerPath: String,
+  mode: String)
+
 case class DockerApp(
   id: String,
   container: Option[Docker],
@@ -18,4 +23,5 @@ case class DockerApp(
   labels: Map[String, String] = Map(),
   constraints: List[List[String]] = Nil,
   healthChecks: List[Map[String, Any]] = Nil,
-  upgradeStrategy: Map[String, Double] = Map())
+  upgradeStrategy: Map[String, Double] = Map(),
+  volumes: List[DockerVolume] = Nil)

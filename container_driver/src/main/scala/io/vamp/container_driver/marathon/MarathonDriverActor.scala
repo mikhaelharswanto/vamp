@@ -135,7 +135,7 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver with
   private def deploy(app: DockerApp, update: Boolean, force: Boolean = false): Future[Any] = {
     val marathonApp = MarathonApp(
       app.id,
-      app.container.map(Container(_)),
+      app.container.map(Container(_, "DOCKER", app.volumes)),
       app.instances,
       app.cpu,
       app.memory,

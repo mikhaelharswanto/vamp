@@ -23,6 +23,8 @@ private[config] class Config(config: TypesafeConfig, root: String) {
 
   def stringList(path: String) = read(path).getStringList(path).asScala.toList
 
+  def objectList(path: String) = read(path).getObjectList(path).asScala.toList
+
   def timeout(path: String) = Timeout(duration(path))
 
   def duration(path: String) = FiniteDuration(read(path).getDuration(path, MILLISECONDS), MILLISECONDS)

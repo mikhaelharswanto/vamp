@@ -1,6 +1,6 @@
 package io.vamp.container_driver.marathon
 
-import io.vamp.container_driver.Docker
+import io.vamp.container_driver.{ Docker, DockerVolume }
 
 case class MarathonApp(
   id: String,
@@ -16,4 +16,4 @@ case class MarathonApp(
   healthChecks: List[Map[String, Any]] = Nil,
   upgradeStrategy: Map[String, Double] = Map())
 
-case class Container(docker: Docker, `type`: String = "DOCKER")
+case class Container(docker: Docker, `type`: String = "DOCKER", volumes: List[DockerVolume] = Nil)
