@@ -80,16 +80,16 @@ class ElasticsearchClient(url: String)(implicit executor: ExecutionContext) {
   }
 
   def search[A](index: String, query: Any)(implicit mf: scala.reflect.Manifest[A], formats: Formats): Future[A] =
-    RestClient.post[A](urlOf(url, index, "_search"), query)
+    RestClient.post[A](s"${urlOf(url, index, "_search")}?preference=vamp", query)
 
   def search[A](index: String, `type`: String, query: Any)(implicit mf: scala.reflect.Manifest[A], formats: Formats = DefaultFormats): Future[A] =
-    RestClient.post[A](urlOf(url, index, `type`, "_search"), query)
+    RestClient.post[A](s"${urlOf(url, index, `type`, "_search")}?preference=vamp", query)
 
   def count(index: String, query: Any)(implicit formats: Formats = DefaultFormats): Future[ElasticsearchCountResponse] =
     RestClient.post[ElasticsearchCountResponse](urlOf(url, index, "_count"), query)
 
   def aggregate(index: String, query: Any)(implicit formats: Formats = DefaultFormats): Future[ElasticsearchAggregationResponse] =
-    RestClient.post[ElasticsearchAggregationResponse](urlOf(url, index, "_search"), query)
+    RestClient.post[ElasticsearchAggregationResponse](s"${urlOf(url, index, "_search")}?preference=vamp", query)
 
   private def urlOf(url: String, paths: String*) = (url :: paths.map(path ⇒ URLEncoder.encode(path, "UTF-8")).toList) mkString "/"
 }
