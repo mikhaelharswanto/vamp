@@ -64,7 +64,7 @@ class VgaMarathonSynchronizationActor extends VgaSynchronizationActor with Artif
       log.info(s"Initiating VGA deployment, number of instances: $count")
 
       if (count > 0)
-        IoC.actorFor[ContainerDriverActor] ! DeployDockerApp(request(count), update = instances != 0, force = true)
+        IoC.actorFor[ContainerDriverActor] ! DeployDockerApp(request(count), update = instances != 0)
       else
         IoC.actorFor[ContainerDriverActor] ! UndeployDockerApp(id)
     }
@@ -85,11 +85,11 @@ class VgaMarathonSynchronizationActor extends VgaSynchronizationActor with Artif
       instances = instances,
       cpu = cpu,
       memory = mem,
-      environmentVariables = Map(),
+      environmentVariables = Map("INTERNAL_LB_DNS" -> internalLBDns),
       command = Nil,
       arguments = command,
       constraints = List(List("hostname", "UNIQUE")),
-      healthChecks = List(Map("protocol" -> "COMMAND", "command" -> Map("value" -> healthCheckCommand))),
+      healthChecks = List(Map("protocol" -> "COMMAND", "command" -> Map("value" -> healthCheckCommand), "intervalSeconds" -> healthCheckInterval)),
       upgradeStrategy = Map("minimumHealthCapacity" -> 0.9, "maximumOverCapacity" -> 0),
       volumes = volumes
     )

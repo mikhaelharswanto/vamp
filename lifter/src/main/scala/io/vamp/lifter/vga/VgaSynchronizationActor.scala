@@ -12,6 +12,8 @@ trait VgaSynchronizationActor extends CommonSupportForActors with LifterNotifica
   private val configuration = Config.config("vamp.lifter.vamp-gateway-agent")
 
   protected val healthCheckCommand = configuration.string("health-check-command")
+  protected val healthCheckInterval = configuration.int("health-check-interval")
+  protected val internalLBDns = configuration.string("internal-lb-dns-name")
 
   private val scale = Config.config("vamp.lifter.vamp-gateway-agent.scale")
   protected val cpu = scale.double("cpu")
