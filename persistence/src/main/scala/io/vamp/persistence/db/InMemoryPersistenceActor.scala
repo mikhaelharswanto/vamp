@@ -30,7 +30,7 @@ class InMemoryPersistenceActor extends PersistenceActor with TypeOfArtifact {
   }
 
   protected def get(name: String, `type`: Class[_ <: Artifact]): Future[Option[Artifact]] = Future.successful {
-    log.debug(s"${getClass.getSimpleName}: read [${`type`.getSimpleName}] - $name}")
+    log.debug(s"${getClass.getSimpleName}: get [${`type`.getSimpleName}] - $name}")
     store.read(name, `type`)
   }
 
@@ -48,6 +48,8 @@ class InMemoryPersistenceActor extends PersistenceActor with TypeOfArtifact {
 class InMemoryStore(log: LoggingAdapter) extends TypeOfArtifact with PersistenceNotificationProvider {
 
   private val store: mutable.Map[String, mutable.Map[String, Artifact]] = new mutable.HashMap()
+
+  def clear() = store.clear()
 
   def info() = Map[String, Any](
     "type" -> "in-memory [no persistence]",

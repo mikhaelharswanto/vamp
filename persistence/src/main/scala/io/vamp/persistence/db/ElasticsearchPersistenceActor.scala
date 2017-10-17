@@ -6,8 +6,9 @@ import io.vamp.model.reader._
 import io.vamp.model.serialization.CoreSerializationFormat
 import io.vamp.persistence.operation._
 import io.vamp.pulse.ElasticsearchClient
-import io.vamp.pulse.ElasticsearchClient.{ ElasticsearchGetResponse, ElasticsearchSearchResponse }
+import io.vamp.pulse.ElasticsearchClient.{ElasticsearchSearchResponse}
 import org.json4s.native.Serialization._
+import scala.concurrent.duration._
 
 import scala.concurrent.Future
 
@@ -16,6 +17,8 @@ object ElasticsearchPersistenceActor {
   lazy val index = Config.string("vamp.persistence.database.elasticsearch.index")
 
   lazy val elasticsearchUrl: String = Config.string("vamp.persistence.database.elasticsearch.url")
+
+  lazy val elasticsearcCacheRefreshPeriod: FiniteDuration = Config.duration("vamp.persistence.database.elasticsearch.cache.refresh-period")
 }
 
 case class ElasticsearchArtifact(artifact: String)
@@ -29,6 +32,12 @@ class ElasticsearchPersistenceActor extends PersistenceActor with TypeOfArtifact
 
   private val es = new ElasticsearchClient(elasticsearchUrl)
 
+  private val cache = new InMemoryStore(log)
+
+  actorSystem.scheduler.schedule(elasticsearcCacheRefreshPeriod, elasticsearcCacheRefreshPeriod, new Runnable {
+    override def run(): Unit = cache.clear()
+  })
+
   protected def info(): Future[Any] = for {
     health ← es.health
     initializationTime ← es.creationTime(index)
@@ -36,7 +45,10 @@ class ElasticsearchPersistenceActor extends PersistenceActor with TypeOfArtifact
 
   protected def all(`type`: Class[_ <: Artifact], page: Int, perPage: Int): Future[ArtifactResponseEnvelope] = {
     log.debug(s"${getClass.getSimpleName}: all [${type2string(`type`)}] of $page per $perPage")
-
+    val fromCache = cache.all(`type`, page, perPage)
+    if (fromCache != Nil && fromCache.total > 0) {
+      return Future.successful(fromCache)
+    }
     val from = (page - 1) * perPage
     es.search[ElasticsearchSearchResponse](index, `type`,
       s"""
@@ -52,32 +64,37 @@ class ElasticsearchPersistenceActor extends PersistenceActor with TypeOfArtifact
          |  "size": $perPage
          |}
         """.stripMargin) map {
-        case response ⇒ ArtifactResponseEnvelope(response.hits.hits.flatMap { hit ⇒ read(`type`, hit._source) }, response.hits.total, from, perPage)
-      }
+      case response ⇒ ArtifactResponseEnvelope(response.hits.hits.flatMap { hit ⇒ read(`type`, hit._source) }, response.hits.total, from, perPage)
+    }
   }
 
-  protected def get(name: String, `type`: Class[_ <: Artifact]): Future[Option[Artifact]] = {
-    log.debug(s"${getClass.getSimpleName}: read [${type2string(`type`)}] - $name}")
-    es.get[ElasticsearchGetResponse](index, `type`, name) map {
-      case hit ⇒ if (hit.found) read(`type`, hit._source) else None
-    }
+  protected def get(name: String, `type`: Class[_ <: Artifact]): Future[Option[Artifact]] = Future.successful {
+    log.debug(s"${getClass.getSimpleName}: read [${`type`.getSimpleName}] - $name}")
+    cache.read(name, `type`)
   }
 
   protected def set(artifact: Artifact): Future[Artifact] = {
     val json = write(artifact)(CoreSerializationFormat.full)
     log.debug(s"${getClass.getSimpleName}: set [${artifact.getClass.getSimpleName}] - $json")
+    cache.set(artifact)
     es.index[Any](index, artifact.getClass, artifact.name, ElasticsearchArtifact(json)).map { _ ⇒ artifact }
   }
 
   protected def delete(name: String, `type`: Class[_ <: Artifact]): Future[Boolean] = {
     log.debug(s"${getClass.getSimpleName}: delete [${`type`.getSimpleName}] - $name}")
+    cache.delete(name, `type`).isDefined
     es.delete(index, `type`, name).map {
       response ⇒ response != None
     }
   }
 
   private def read(`type`: String, source: Map[String, Any]): Option[Artifact] = source.get("artifact").flatMap { artifact ⇒
-    readerOf(`type`).flatMap { reader ⇒ Option(reader.read(artifact.toString)) }
+    readerOf(`type`).flatMap { reader ⇒ Option(reader.read(artifact.toString)) } map {
+      artifact ⇒ {
+        cache.set(artifact)
+        artifact
+      }
+    }
   }
 
   private def readerOf(`type`: String): Option[YamlReader[_ <: Artifact]] = Map(
@@ -106,9 +123,9 @@ class ElasticsearchPersistenceActor extends PersistenceActor with TypeOfArtifact
             case yaml ⇒
               implicit val source = yaml
               (<<?[String]("name"), <<?[String]("url")) match {
-                case (_, Some(url))  ⇒ ExternalRouteTarget(url) :: Nil
+                case (_, Some(url)) ⇒ ExternalRouteTarget(url) :: Nil
                 case (Some(name), _) ⇒ InternalRouteTarget(name, <<?[String]("host"), <<![Int]("port")) :: Nil
-                case _               ⇒ Nil
+                case _ ⇒ Nil
               }
           }
           case _ ⇒ Nil
