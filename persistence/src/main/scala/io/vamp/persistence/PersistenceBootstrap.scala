@@ -1,6 +1,6 @@
 package io.vamp.persistence
 
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.{ ActorRef, ActorSystem, Props }
 import io.vamp.common.config.Config
 import io.vamp.common.akka.{ ActorBootstrap, IoC }
 import io.vamp.persistence.db.{ ElasticsearchPersistenceActor, InMemoryPersistenceActor, PersistenceActor }
@@ -12,6 +12,8 @@ object PersistenceBootstrap extends ActorBootstrap {
 
   val keyValueStoreType = Config.string("vamp.persistence.key-value-store.type")
 
+  val persistenceDBMailbox = "vamp.persistence.mailbox"
+
   def createActors(implicit actorSystem: ActorSystem): List[ActorRef] = {
 
     IoC.alias[KeyValueStoreActor, ZooKeeperStoreActor]
@@ -19,11 +21,11 @@ object PersistenceBootstrap extends ActorBootstrap {
     val dbActor = databaseType match {
       case "in-memory" ⇒
         IoC.alias[PersistenceActor, InMemoryPersistenceActor]
-        IoC.createActor[InMemoryPersistenceActor]
+        IoC.createActor(Props(classOf[InMemoryPersistenceActor]).withMailbox(persistenceDBMailbox))
 
       case "elasticsearch" ⇒
         IoC.alias[PersistenceActor, ElasticsearchPersistenceActor]
-        IoC.createActor[ElasticsearchPersistenceActor]
+        IoC.createActor(Props(classOf[ElasticsearchPersistenceActor]).withMailbox(persistenceDBMailbox))
 
       case other ⇒ throw new RuntimeException(s"Unsupported database type: $other")
     }
