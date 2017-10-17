@@ -23,5 +23,5 @@ case class DockerApp(
   labels: Map[String, String] = Map(),
   constraints: List[List[String]] = Nil,
   healthChecks: List[Map[String, Any]] = Nil,
-  upgradeStrategy: Map[String, Double] = Map(),
+  upgradeStrategy: Map[String, Double] = Map("minimumHealthCapacity" -> 1.0, "maximumOverCapacity" -> 1.0),
   volumes: List[DockerVolume] = Nil)
