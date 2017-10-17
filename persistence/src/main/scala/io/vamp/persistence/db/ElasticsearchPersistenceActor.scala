@@ -3,8 +3,9 @@ package io.vamp.persistence.db
 import io.vamp.common.config.Config
 import io.vamp.model.artifact._
 import io.vamp.pulse.ElasticsearchClient
+
 import scala.concurrent.duration._
-import io.vamp.pulse.ElasticsearchClient.{ElasticsearchSearchResponse }
+import io.vamp.pulse.ElasticsearchClient.{ElasticsearchGetResponse, ElasticsearchSearchResponse}
 
 import scala.concurrent.Future
 
@@ -14,7 +15,7 @@ object ElasticsearchPersistenceActor {
 
   lazy val elasticsearchUrl: String = Config.string("vamp.persistence.database.elasticsearch.url")
 
-  lazy val elasticsearcCacheRefreshPeriod: FiniteDuration = Config.duration("vamp.persistence.database.elasticsearch.cache.refresh-period")
+  lazy val cacheRefreshPeriod: FiniteDuration = Config.duration("vamp.persistence.database.cache.refresh-period")
 }
 
 case class ElasticsearchArtifact(artifact: String)
@@ -27,12 +28,6 @@ class ElasticsearchPersistenceActor extends PersistenceActor with PersistenceMar
 
   private val es = new ElasticsearchClient(elasticsearchUrl)
 
-  private val cache = new InMemoryStore(log)
-
-  actorSystem.scheduler.schedule(elasticsearcCacheRefreshPeriod, elasticsearcCacheRefreshPeriod, new Runnable {
-    override def run(): Unit = cache.clear()
-  })
-
   protected def info(): Future[Any] = for {
     health ← es.health
     initializationTime ← es.creationTime(index)
@@ -41,9 +36,10 @@ class ElasticsearchPersistenceActor extends PersistenceActor with PersistenceMar
   protected def all(`type`: Class[_ <: Artifact], page: Int, perPage: Int): Future[ArtifactResponseEnvelope] = {
     log.debug(s"${getClass.getSimpleName}: all [${type2string(`type`)}] of $page per $perPage")
     val fromCache = cache.all(`type`, page, perPage)
-    if (fromCache != Nil && fromCache.total > 0) {
+    if (fromCache.total > 0) {
       return Future.successful(fromCache)
     }
+
     val from = (page - 1) * perPage
     es.search[ElasticsearchSearchResponse](index, `type`,
       s"""
@@ -63,21 +59,31 @@ class ElasticsearchPersistenceActor extends PersistenceActor with PersistenceMar
     }
   }
 
-  protected def get(name: String, `type`: Class[_ <: Artifact]): Future[Option[Artifact]] = Future.successful {
-    log.debug(s"${getClass.getSimpleName}: read [${`type`.getSimpleName}] - $name}")
-    cache.read(name, `type`)
+  protected def get(name: String, `type`: Class[_ <: Artifact]): Future[Option[Artifact]] = {
+    log.debug(s"${getClass.getSimpleName}: read [${type2string(`type`)}] - $name}")
+    if (cacheEnabled) {
+      return Future.successful(cache.read(name, `type`))
+    }
+
+    es.get[ElasticsearchGetResponse](index, `type`, name) map {
+      case hit ⇒ if (hit.found) read(`type`, hit._source) else None
+    }
   }
 
   protected def set(artifact: Artifact): Future[Artifact] = {
     val json = marshall(artifact)
     log.debug(s"${getClass.getSimpleName}: set [${artifact.getClass.getSimpleName}] - $json")
-    cache.set(artifact)
+    if (cacheEnabled) {
+      cache.set(artifact)
+    }
     es.index[Any](index, artifact.getClass, artifact.name, ElasticsearchArtifact(json)).map { _ ⇒ artifact }
   }
 
   protected def delete(name: String, `type`: Class[_ <: Artifact]): Future[Boolean] = {
     log.debug(s"${getClass.getSimpleName}: delete [${`type`.getSimpleName}] - $name}")
-    cache.delete(name, `type`).isDefined
+    if (cacheEnabled) {
+      cache.delete(name, `type`)
+    }
     es.delete(index, `type`, name).map(_ != None)
   }
 

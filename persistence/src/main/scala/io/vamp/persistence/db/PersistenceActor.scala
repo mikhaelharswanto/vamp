@@ -43,6 +43,18 @@ trait PersistenceActor extends PersistenceMultiplexer with PersistenceArchive wi
 
   lazy implicit val timeout = PersistenceActor.timeout
 
+  lazy val cacheEnabled = Config.boolean("vamp.persistence.database.cache.enabled")
+
+  lazy val cacheRefreshPeriod = Config.duration("vamp.persistence.database.cache.refresh-period")
+
+  lazy val cache = new InMemoryStore(log)
+
+  if (cacheEnabled) {
+    actorSystem.scheduler.schedule(cacheRefreshPeriod, cacheRefreshPeriod, new Runnable {
+      override def run(): Unit = cache.clear()
+    })
+  }
+
   protected def info(): Future[Any]
 
   protected def all(`type`: Class[_ <: Artifact], page: Int, perPage: Int): Future[ArtifactResponseEnvelope]

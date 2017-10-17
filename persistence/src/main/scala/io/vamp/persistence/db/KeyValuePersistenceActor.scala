@@ -2,16 +2,22 @@ package io.vamp.persistence.db
 
 import akka.pattern.ask
 import io.vamp.common.akka.IoC
+import io.vamp.common.config.Config
 import io.vamp.model.artifact._
 import io.vamp.persistence.kv.KeyValueStoreActor
 
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 class KeyValuePersistenceActor extends PersistenceActor with PersistenceMarshaller with TypeOfArtifact {
 
   protected def info(): Future[Any] = Future.successful(Map("type" -> "key-value"))
 
   protected def all(`type`: Class[_ <: Artifact], page: Int, perPage: Int): Future[ArtifactResponseEnvelope] = {
+    val fromCache = cache.all(`type`, page, perPage)
+    if (cacheEnabled && fromCache.total > 0) {
+      return Future.successful(fromCache)
+    }
 
     val as = type2string(`type`)
 
@@ -37,6 +43,10 @@ class KeyValuePersistenceActor extends PersistenceActor with PersistenceMarshall
   }
 
   protected def get(name: String, `type`: Class[_ <: Artifact]): Future[Option[Artifact]] = {
+    if (cacheEnabled) {
+      return Future.successful(cache.read(name, `type`))
+    }
+
     val as = type2string(`type`)
     log.debug(s"${getClass.getSimpleName}: read [$as] - $name}")
 
@@ -50,12 +60,18 @@ class KeyValuePersistenceActor extends PersistenceActor with PersistenceMarshall
     val json = marshall(artifact)
     val as = type2string(artifact.getClass)
     log.debug(s"${getClass.getSimpleName}: set [$as] - $json")
+    if (cacheEnabled) {
+      cache.set(artifact)
+    }
     IoC.actorFor[KeyValueStoreActor] ? KeyValueStoreActor.Set(as :: artifact.name :: Nil, Option(json)) map (_ ⇒ artifact)
   }
 
   protected def delete(name: String, `type`: Class[_ <: Artifact]): Future[Boolean] = {
     val as = type2string(`type`)
     log.debug(s"${getClass.getSimpleName}: delete [$as] - $name}")
+    if (cacheEnabled) {
+      cache.delete(name, `type`)
+    }
     IoC.actorFor[KeyValueStoreActor] ? KeyValueStoreActor.Set(as :: name :: Nil, None) map (_ ⇒ true)
   }
 }
