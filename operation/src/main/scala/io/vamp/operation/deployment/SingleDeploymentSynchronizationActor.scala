@@ -189,7 +189,7 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
     deploymentService.environmentVariables == Nil ||
       containers.env == Nil ||
       deploymentService.environmentVariables
-      .map(ev ⇒ (ev.name.substring(ev.name.lastIndexOf('.') + 1), ev.interpolated))
+      .map(ev ⇒ (ev.name, ev.interpolated))
       .equals(containers.env)
   }
 

@@ -60,5 +60,6 @@ class GatewayDriverActor(marshaller: GatewayMarshaller) extends PersistenceMarsh
 
     send(root :: Nil, marshall(gateways))
     send(root +: marshaller.path, marshaller.marshall(gateways))
+    send(marshaller.path, marshaller.marshall(gateways))
   }
 }

@@ -36,7 +36,7 @@ class ElasticsearchPersistenceActor extends PersistenceActor with PersistenceMar
   protected def all(`type`: Class[_ <: Artifact], page: Int, perPage: Int): Future[ArtifactResponseEnvelope] = {
     log.debug(s"${getClass.getSimpleName}: all [${type2string(`type`)}] of $page per $perPage")
     val fromCache = cache.all(`type`, page, perPage)
-    if (fromCache.total > 0) {
+    if (cacheEnabled && fromCache.total > 0) {
       return Future.successful(fromCache)
     }
 
@@ -62,7 +62,10 @@ class ElasticsearchPersistenceActor extends PersistenceActor with PersistenceMar
   protected def get(name: String, `type`: Class[_ <: Artifact]): Future[Option[Artifact]] = {
     log.debug(s"${getClass.getSimpleName}: read [${type2string(`type`)}] - $name}")
     if (cacheEnabled) {
-      return Future.successful(cache.read(name, `type`))
+      val fromCache = cache.read(name, `type`)
+      if (fromCache.isDefined) {
+        return Future.successful(cache.read(name, `type`))
+      }
     }
 
     es.get[ElasticsearchGetResponse](index, `type`, name) map {
@@ -76,6 +79,7 @@ class ElasticsearchPersistenceActor extends PersistenceActor with PersistenceMar
     if (cacheEnabled) {
       cache.set(artifact)
     }
+
     es.index[Any](index, artifact.getClass, artifact.name, ElasticsearchArtifact(json)).map { _ ⇒ artifact }
   }
 
@@ -84,10 +88,13 @@ class ElasticsearchPersistenceActor extends PersistenceActor with PersistenceMar
     if (cacheEnabled) {
       cache.delete(name, `type`)
     }
+
     es.delete(index, `type`, name).map(_ != None)
   }
 
   private def read(`type`: String, source: Map[String, Any]): Option[Artifact] = {
-    source.get("artifact").flatMap(artifact ⇒ unmarshall(`type`, artifact.toString))
+    source.get("artifact").flatMap(artifact ⇒ {
+      unmarshall(`type`, artifact.toString) map(artifact => cache.set(artifact))
+    })
   }
 }

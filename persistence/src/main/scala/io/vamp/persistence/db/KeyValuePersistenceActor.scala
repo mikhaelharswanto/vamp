@@ -36,7 +36,7 @@ class KeyValuePersistenceActor extends PersistenceActor with PersistenceMarshall
             name ⇒ checked[Option[String]](IoC.actorFor[KeyValueStoreActor] ? KeyValueStoreActor.Get(as :: name :: Nil))
           }
         } map {
-          artifacts ⇒ ArtifactResponseEnvelope(artifacts.flatten.flatMap(unmarshall(as, _)), list.size, page, perPage)
+          artifacts ⇒ ArtifactResponseEnvelope(artifacts.flatten.flatMap(unmarshall(as, _) map (cache.set(_))), list.size, page, perPage)
         }
       }
     }
@@ -44,7 +44,10 @@ class KeyValuePersistenceActor extends PersistenceActor with PersistenceMarshall
 
   protected def get(name: String, `type`: Class[_ <: Artifact]): Future[Option[Artifact]] = {
     if (cacheEnabled) {
-      return Future.successful(cache.read(name, `type`))
+      val fromCache = cache.read(name, `type`)
+      if (fromCache.isDefined) {
+        return Future.successful(cache.read(name, `type`))
+      }
     }
 
     val as = type2string(`type`)

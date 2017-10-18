@@ -126,7 +126,18 @@ object RouteReader extends YamlReader[Route] with WeakReferenceYamlReader[Route]
   override protected def createReference(implicit source: YamlSourceReader): Route = RouteReference(reference, Route.noPath)
 
   override protected def createDefault(implicit source: YamlSourceReader): Route = {
-    source.flatten({ entry ⇒ entry == "instances" })
+    val targets = <<?[YamlList]("instances") match {
+      case Some(list) ⇒ list.flatMap {
+        case yaml ⇒
+          implicit val source = yaml
+          (<<?[String]("name"), <<?[String]("url")) match {
+            case (_, Some(url))  ⇒ ExternalRouteTarget(url) :: Nil
+            case (Some(name), _) ⇒ InternalRouteTarget(name, <<?[String]("host"), <<![Int]("port")) :: Nil
+            case _               ⇒ Nil
+          }
+      }
+      case _ ⇒ Nil
+    }
     val conds = conditions match {
       case Nil ⇒ filters
       case default ⇒  default
@@ -135,7 +146,7 @@ object RouteReader extends YamlReader[Route] with WeakReferenceYamlReader[Route]
       case None ⇒ <<?[Percentage]("filter_strength")
       case default ⇒ default
     }
-    DefaultRoute(name, Route.noPath, <<?[Percentage]("weight"), strength, conds, rewrites, balance)
+    DefaultRoute(name, Route.noPath, <<?[Percentage]("weight"), strength, conds, rewrites, balance, targets)
   }
 
   override protected def expand(implicit source: YamlSourceReader) = {
