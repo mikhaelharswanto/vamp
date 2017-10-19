@@ -14,7 +14,7 @@ import scala.language.existentials
 import scala.reflect._
 
 object ArtifactResponseEnvelope {
-  val maxPerPage = 30
+  val maxPerPage = 15
 }
 
 case class ArtifactResponseEnvelope(response: List[Artifact], total: Long, page: Int, perPage: Int) extends OffsetResponseEnvelope[Artifact]
@@ -47,7 +47,7 @@ trait PersistenceActor extends PersistenceMultiplexer with PersistenceArchive wi
 
   lazy val cacheRefreshPeriod = Config.duration("vamp.persistence.database.cache.refresh-period")
 
-  lazy val cache = new InMemoryStore(log)
+  lazy val cache = new InMemoryCaching(log)
 
   if (cacheEnabled) {
     actorSystem.scheduler.schedule(cacheRefreshPeriod, cacheRefreshPeriod, new Runnable {

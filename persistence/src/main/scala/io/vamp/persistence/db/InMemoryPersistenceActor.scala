@@ -60,7 +60,7 @@ class InMemoryStore(log: LoggingAdapter) extends TypeOfArtifact with Persistence
   def all(`type`: Class[_ <: Artifact], page: Int, perPage: Int): ArtifactResponseEnvelope = {
     val artifacts = store.get(`type`) match {
       case None      ⇒ Nil
-      case Some(map) ⇒ map.values.toList
+      case Some(map) ⇒ map.values.toList.sortBy(_.name)
     }
     val total = artifacts.size
     val (p, pp) = OffsetEnvelope.normalize(page, perPage, ArtifactResponseEnvelope.maxPerPage)
@@ -101,6 +101,28 @@ class InMemoryStore(log: LoggingAdapter) extends TypeOfArtifact with Persistence
     }
     artifact
   }
+}
+
+class InMemoryCaching(log: LoggingAdapter) extends InMemoryStore(log) {
+
+  private val totals: mutable.Map[String, Long] = new mutable.HashMap()
+
+  def setTotal(`type`: Class[_ <: Artifact], total: Long) = totals.put(`type`, total)
+
+  override def all(`type`: Class[_ <: Artifact], page: Int, perPage: Int): ArtifactResponseEnvelope = {
+    totals.get(`type`) match {
+      case None      ⇒ ArtifactResponseEnvelope(List.empty, 0, page, perPage)
+      case Some(cur) ⇒ {
+        val all = super.all(`type`, page, perPage)
+        if (all.total < cur) {
+          ArtifactResponseEnvelope(List.empty, 0, page, perPage)
+        } else {
+          all
+        }
+      }
+    }
+  }
+
 }
 
 trait TypeOfArtifact {

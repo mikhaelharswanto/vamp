@@ -2,12 +2,10 @@ package io.vamp.persistence.db
 
 import akka.pattern.ask
 import io.vamp.common.akka.IoC
-import io.vamp.common.config.Config
 import io.vamp.model.artifact._
 import io.vamp.persistence.kv.KeyValueStoreActor
 
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 
 class KeyValuePersistenceActor extends PersistenceActor with PersistenceMarshaller with TypeOfArtifact {
 
@@ -15,7 +13,7 @@ class KeyValuePersistenceActor extends PersistenceActor with PersistenceMarshall
 
   protected def all(`type`: Class[_ <: Artifact], page: Int, perPage: Int): Future[ArtifactResponseEnvelope] = {
     val fromCache = cache.all(`type`, page, perPage)
-    if (cacheEnabled && fromCache.total > 0) {
+    if (cacheEnabled && !fromCache.response.isEmpty) {
       return Future.successful(fromCache)
     }
 
@@ -36,7 +34,10 @@ class KeyValuePersistenceActor extends PersistenceActor with PersistenceMarshall
             name ⇒ checked[Option[String]](IoC.actorFor[KeyValueStoreActor] ? KeyValueStoreActor.Get(as :: name :: Nil))
           }
         } map {
-          artifacts ⇒ ArtifactResponseEnvelope(artifacts.flatten.flatMap(unmarshall(as, _) map (cache.set(_))), list.size, page, perPage)
+          artifacts ⇒ {
+            cache.setTotal(`type`, list.size)
+            ArtifactResponseEnvelope(artifacts.flatten.flatMap(unmarshall(as, _) map (cache.set(_))), list.size, page, perPage)
+          }
         }
       }
     }

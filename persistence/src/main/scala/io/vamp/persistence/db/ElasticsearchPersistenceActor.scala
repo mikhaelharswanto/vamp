@@ -36,7 +36,7 @@ class ElasticsearchPersistenceActor extends PersistenceActor with PersistenceMar
   protected def all(`type`: Class[_ <: Artifact], page: Int, perPage: Int): Future[ArtifactResponseEnvelope] = {
     log.debug(s"${getClass.getSimpleName}: all [${type2string(`type`)}] of $page per $perPage")
     val fromCache = cache.all(`type`, page, perPage)
-    if (cacheEnabled && fromCache.total > 0) {
+    if (cacheEnabled && !fromCache.response.isEmpty) {
       return Future.successful(fromCache)
     }
 
@@ -55,7 +55,10 @@ class ElasticsearchPersistenceActor extends PersistenceActor with PersistenceMar
          |  "size": $perPage
          |}
         """.stripMargin) map {
-      case response ⇒ ArtifactResponseEnvelope(response.hits.hits.flatMap { hit ⇒ read(`type`, hit._source) }, response.hits.total, from, perPage)
+      case response ⇒ {
+        cache.setTotal(`type`, response.hits.total)
+        ArtifactResponseEnvelope(response.hits.hits.flatMap { hit ⇒ read(`type`, hit._source) }, response.hits.total, from, perPage)
+      }
     }
   }
 
