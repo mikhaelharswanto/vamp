@@ -5,7 +5,7 @@ import io.vamp.common.config.Config
 import io.vamp.common.crypto.Hash
 import io.vamp.common.http.RestClient
 import io.vamp.common.vitals.InfoRequest
-import io.vamp.container_driver.DockerAppDriver.{ DeployDockerApp, RetrieveDockerApp, UndeployDockerApp }
+import io.vamp.container_driver.DockerAppDriver.{ DeployDockerApp, RetrieveDockerApp, ScaleDockerApp, UndeployDockerApp }
 import io.vamp.container_driver._
 import io.vamp.container_driver.notification.{ UndefinedMarathonApplication, UnsupportedContainerDriverRequest }
 import io.vamp.model.artifact._
@@ -51,10 +51,12 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver with
     case InfoRequest                ⇒ reply(info)
 
     case Get(services)              ⇒ get(services)
+    case s: Scale                   ⇒ reply(scale(s.deployment, s.cluster, s.service))
     case d: Deploy                  ⇒ reply(deploy(d.deployment, d.cluster, d.service, d.update))
     case u: Undeploy                ⇒ reply(undeploy(u.deployment, u.service))
     case DeployedGateways(gateways) ⇒ reply(deployedGateways(gateways))
 
+    case d: ScaleDockerApp          ⇒ reply(scale(d.app, d.force))
     case d: DeployDockerApp         ⇒ reply(deploy(d.app, d.update, d.force))
     case u: UndeployDockerApp       ⇒ reply(undeploy(u.app))
     case r: RetrieveDockerApp       ⇒ reply(retrieve(r.app))
@@ -112,6 +114,15 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver with
     }
   }
 
+  private def scale(deployment: Deployment, cluster: DeploymentCluster, service: DeploymentService): Future[Any] = {
+    validateSchemaSupport(service.breed.deployable.schema, Schema)
+
+    val id = appId(deployment, service.breed)
+    log.info(s"marathon scale app: $id")
+
+    sendRequest(update = true, id, Extraction.decompose(Map("instances" -> service.scale.get.instances)), true)
+  }
+
   private def deploy(deployment: Deployment, cluster: DeploymentCluster, service: DeploymentService, update: Boolean): Future[Any] = {
     validateSchemaSupport(service.breed.deployable.schema, Schema)
 
@@ -130,6 +141,10 @@ class MarathonDriverActor extends ContainerDriverActor with ContainerDriver with
     )
 
     sendRequest(update, app.id, requestPayload(deployment, cluster, service, purge(app)))
+  }
+
+  private def scale(app: DockerApp, force: Boolean = false): Future[Any] = {
+    sendRequest(update = true, app.id, Extraction.decompose(Map("instances" -> app.instances)), force)
   }
 
   private def deploy(app: DockerApp, update: Boolean, force: Boolean = false): Future[Any] = {

@@ -3,7 +3,7 @@ package io.vamp.lifter.vga
 import akka.pattern.ask
 import io.vamp.common.akka._
 import io.vamp.common.vitals.InfoRequest
-import io.vamp.container_driver.DockerAppDriver.{ DeployDockerApp, RetrieveDockerApp, UndeployDockerApp }
+import io.vamp.container_driver.DockerAppDriver.{ DeployDockerApp, RetrieveDockerApp, ScaleDockerApp, UndeployDockerApp }
 import io.vamp.container_driver.marathon._
 import io.vamp.container_driver.{ ContainerDriverActor, ContainerInfo, Docker, DockerApp }
 import io.vamp.lifter.notification.LifterNotificationProvider
@@ -63,8 +63,10 @@ class VgaMarathonSynchronizationActor extends VgaSynchronizationActor with Artif
     if (count != instances) {
       log.info(s"Initiating VGA deployment, number of instances: $count")
 
-      if (count > 0)
-        IoC.actorFor[ContainerDriverActor] ! DeployDockerApp(request(count), update = instances != 0, true)
+      if (count > 0 && instances == 0)
+        IoC.actorFor[ContainerDriverActor] ! DeployDockerApp(request(count), update = instances != 0, false)
+      else if (count > 0)
+        IoC.actorFor[ContainerDriverActor] ! ScaleDockerApp(request(count), true)
       else
         IoC.actorFor[ContainerDriverActor] ! UndeployDockerApp(id)
     }

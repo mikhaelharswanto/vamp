@@ -65,6 +65,8 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
 
   private def deploy(deployment: Deployment, deploymentCluster: DeploymentCluster, deploymentService: DeploymentService, containers: Option[Containers]) = {
 
+    def scale(ds: DeploymentService = deploymentService) = actorFor[ContainerDriverActor] ! ContainerDriverActor.Scale(deployment, deploymentCluster, ds)
+
     def deployTo(update: Boolean, ds: DeploymentService = deploymentService) = actorFor[ContainerDriverActor] ! ContainerDriverActor.Deploy(deployment, deploymentCluster, ds, update = update)
 
     def convert(server: ContainerInstance): DeploymentInstance = {
@@ -82,7 +84,12 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
         }
 
       case Some(cs) ⇒
-        if (!matchingScale(deploymentService, cs) || !matchingEnvironmentVariables(deploymentService, cs)) {
+        if (!matchingScale(deploymentService, cs)) {
+          log.info(s"Scaling ${deployment.name}, contacting driver to scale deployment...")
+          scale(deploymentService.copy(environmentVariables = resolveEnvironmentVariables(deployment, deploymentCluster, deploymentService)))
+          persist(DeploymentServiceInstances(serviceArtifactName(deployment, deploymentCluster, deploymentService), cs.instances.map(convert)))
+          updateGateways(deployment, deploymentCluster)
+        } else if (!matchingInstanceSize(deploymentService, cs) || !matchingEnvironmentVariables(deploymentService, cs)) {
           log.info(s"Deploying ${deployment.name}, contacting driver to update deployment...")
           deployTo(update = true, deploymentService.copy(environmentVariables = resolveEnvironmentVariables(deployment, deploymentCluster, deploymentService)))
           persist(DeploymentServiceInstances(serviceArtifactName(deployment, deploymentCluster, deploymentService), cs.instances.map(convert)))
@@ -179,11 +186,14 @@ class SingleDeploymentSynchronizationActor extends DeploymentGatewayOperation wi
   }
 
   private def matchingScale(deploymentService: DeploymentService, containers: Containers) = {
+    if (checkInstances) containers.instances.size == deploymentService.scale.get.instances else true
+  }
+
+  private def matchingInstanceSize(deploymentService: DeploymentService, containers: Containers) = {
     val cpu = if (checkCpu) containers.scale.cpu == deploymentService.scale.get.cpu else true
     val memory = if (checkMemory) containers.scale.memory == deploymentService.scale.get.memory else true
-    val instances = if (checkInstances) containers.instances.size == deploymentService.scale.get.instances else true
 
-    instances && cpu && memory
+    cpu && memory
   }
 
   private def matchingEnvironmentVariables(deploymentService: DeploymentService, containers: Containers) = {

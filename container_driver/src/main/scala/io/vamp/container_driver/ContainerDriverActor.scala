@@ -21,6 +21,8 @@ object ContainerDriverActor {
 
   case class Get(deploymentServices: List[DeploymentServices]) extends ContainerDriveMessage
 
+  case class Scale(deployment: Deployment, cluster: DeploymentCluster, service: DeploymentService) extends ContainerDriveMessage
+
   case class Deploy(deployment: Deployment, cluster: DeploymentCluster, service: DeploymentService, update: Boolean) extends ContainerDriveMessage
 
   case class Undeploy(deployment: Deployment, cluster: DeploymentCluster, service: DeploymentService) extends ContainerDriveMessage
