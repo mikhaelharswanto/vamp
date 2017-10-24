@@ -63,10 +63,11 @@ class InMemoryStore(log: LoggingAdapter) extends TypeOfArtifact with Persistence
       case Some(map) ⇒ map.values.toList.sortBy(_.name)
     }
     val total = artifacts.size
-    val (p, pp) = OffsetEnvelope.normalize(page, perPage, ArtifactResponseEnvelope.maxPerPage)
-    val (rp, rpp) = OffsetEnvelope.normalize(total, p, pp, ArtifactResponseEnvelope.maxPerPage)
+    val (p, pp) = OffsetEnvelope.normalize(page, perPage, Math.max(perPage, ArtifactResponseEnvelope.maxPerPage))
+    val (rp, rpp) = OffsetEnvelope.normalize(total, p, pp, Math.max(perPage, ArtifactResponseEnvelope.maxPerPage))
 
-    ArtifactResponseEnvelope(artifacts.slice((p - 1) * pp, p * pp), total, rp, rpp)
+    val from = (rp - 1) * rpp
+    ArtifactResponseEnvelope(artifacts.slice((p - 1) * pp, p * pp), total, from, rpp)
   }
 
   def read(name: String, `type`: Class[_ <: Artifact]): Option[Artifact] = store.get(`type`).flatMap(_.get(name))
