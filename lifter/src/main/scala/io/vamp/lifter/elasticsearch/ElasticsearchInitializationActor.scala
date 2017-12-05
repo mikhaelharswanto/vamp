@@ -105,8 +105,7 @@ trait ElasticsearchInitializationActor extends FSM[ElasticsearchInitializationAc
     RestClient.get[Any](s"$elasticsearchUrl/_template") onComplete {
       case Success(response) ⇒
         response match {
-          case map: Map[_, _] ⇒ templates.filterNot(definition ⇒ map.asInstanceOf[Map[String, Any]].contains(definition.name)).foreach(createTemplate)
-          case _              ⇒ templates.foreach(createTemplate)
+          case _ ⇒ templates.foreach(createTemplate)
         }
         receiver ! DoneWithOne
 

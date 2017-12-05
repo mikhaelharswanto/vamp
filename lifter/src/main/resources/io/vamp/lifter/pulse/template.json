@@ -2,7 +2,8 @@
   "template": "$NAME-*",
   "order": 1,
   "settings": {
-    "number_of_shards": 5
+    "number_of_shards": 2,
+    "number_of_replicas" : 2
   },
   "mappings": {
     "_default_": {

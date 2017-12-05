@@ -4,7 +4,7 @@ import io.vamp.common.http.RestClient
 import io.vamp.gateway_driver.kibana.KibanaDashboardActor
 import io.vamp.gateway_driver.logstash.Logstash
 import io.vamp.lifter.elasticsearch.ElasticsearchInitializationActor
-import io.vamp.lifter.elasticsearch.ElasticsearchInitializationActor.{ DocumentDefinition, DoneWithOne, WaitForOne }
+import io.vamp.lifter.elasticsearch.ElasticsearchInitializationActor.{ DocumentDefinition, DoneWithOne, TemplateDefinition, WaitForOne }
 import io.vamp.lifter.notification.LifterNotificationProvider
 import io.vamp.pulse.ElasticsearchClient
 import io.vamp.pulse.ElasticsearchClient.ElasticsearchSearchResponse
@@ -16,6 +16,12 @@ class KibanaDashboardInitializationActor extends ElasticsearchInitializationActo
   import KibanaDashboardActor._
 
   lazy val elasticsearchUrl = KibanaDashboardActor.elasticsearchUrl
+
+  override lazy val templates: List[TemplateDefinition] = {
+    val index = "logstash"
+    def load(name: String) = Source.fromInputStream(getClass.getResourceAsStream(s"$name.json")).mkString.replace("$NAME", index)
+    List(TemplateDefinition(s"$index-template", load("template")))
+  }
 
   override lazy val documents: List[DocumentDefinition] = {
     def load(name: String) = Source.fromInputStream(getClass.getResourceAsStream(s"$name.json")).mkString
