@@ -134,7 +134,7 @@ class PulseActor extends PulseStats with PulseEvent with PulseFailureNotifier wi
 
   private def constructQuery(eventQuery: EventQuery): Map[Any, Any] = {
     Map("query" ->
-      Map("filtered" ->
+      Map("bool" ->
         Map(
           "query" -> Map("match_all" -> Map()),
           "filter" -> Map("bool" ->

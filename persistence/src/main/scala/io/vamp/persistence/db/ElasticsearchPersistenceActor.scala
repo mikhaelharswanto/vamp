@@ -45,11 +45,7 @@ class ElasticsearchPersistenceActor extends PersistenceActor with PersistenceMar
       s"""
          |{
          |  "query": {
-         |    "filtered": {
-         |      "query": {
-         |        "match_all": {}
-         |      }
-         |    }
+         |    "match_all": {}
          |  },
          |  "from": $from,
          |  "size": $perPage
