@@ -136,7 +136,7 @@ class PulseActor extends PulseStats with PulseEvent with PulseFailureNotifier wi
     Map("query" ->
       Map("bool" ->
         Map(
-          "query" -> Map("match_all" -> Map()),
+          "must" -> Map("match_all" -> Map()),
           "filter" -> Map("bool" ->
             Map("must" -> List(constructTagQuery(eventQuery.tags), constructTimeRange(eventQuery.timestamp)).filter(_.isDefined).map(_.get))
           )
