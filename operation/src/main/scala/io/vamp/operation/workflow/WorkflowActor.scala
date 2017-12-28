@@ -28,6 +28,8 @@ object WorkflowActor {
 
   val containerImage = config.string("container-image")
 
+  val environmentVariables = config.entries("environment-variables").mapValues(_.toString)
+
   val scale = config.config("scale") match {
     case c ⇒ DefaultScale("", Quantity.of(c.double("cpu")), MegaByte.of(c.string("memory")), c.int("instances"))
   }
@@ -116,7 +118,8 @@ class WorkflowActor extends ArtifactPaginationSupport with ArtifactSupport with 
 
     val expandedWorkflow = workflow.copy(
       command = Option(workflow.command.getOrElse(WorkflowActor.command.mkString(" "))),
-      containerImage = Option(workflow.containerImage.getOrElse(WorkflowActor.containerImage))
+      containerImage = Option(workflow.containerImage.getOrElse(WorkflowActor.containerImage)),
+      environmentVariables = Option(workflow.environmentVariables.getOrElse(WorkflowActor.environmentVariables))
     )
 
     val path = WorkflowDriver.path(scheduledWorkflow, workflow = true)

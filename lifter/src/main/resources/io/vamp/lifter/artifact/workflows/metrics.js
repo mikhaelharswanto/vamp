@@ -1,23 +1,29 @@
 'use strict';
 
-var _ = require('lodash');
-var vamp = require('vamp-node-client');
+let _ = require('highland');
+let vamp = require('vamp-node-client');
 
-var api = new vamp.Api();
-var metrics = new vamp.Metrics(api);
+let api = new vamp.Api();
+let metrics = new vamp.ElasticsearchMetrics(api);
 
-var period = 5;  // seconds
-var window = 30; // seconds
+let window = 300; // seconds
 
-var process = function() {
-  api.gateways(function (gateways) {
-      _.forEach(gateways, function(gateway) {
-          metrics.average({ ft: gateway.lookup_name }, 'Tt', window, function(total, rate, responseTime) {
-              api.event(['gateways:' + gateway.name, 'metrics:rate'], rate);
-              api.event(['gateways:' + gateway.name, 'metrics:responseTime'], responseTime);
-          });
-      });
-  });
-};
+function publish(tags, metrics) {
+    console.log('metrics: [' + JSON.stringify(tags) + '] - ' + metrics);
+    api.event(tags, metrics, 'metrics');
+}
 
-setInterval(process, period * 1000);
+api.gateways().each(function (gateway) {
+
+    metrics.average({ft: gateway.lookup_name}, 'Tt', window).each(function (response) {
+        publish(['gateways:' + gateway.name, 'gateway', 'metrics:rate'], response.rate);
+        publish(['gateways:' + gateway.name, 'gateway', 'metrics:responseTime'], response.average);
+    });
+
+    api.namify(gateway.routes).each(function (route) {
+        metrics.average({ft: route.lookup_name}, 'Tt', window).each(function (response) {
+            publish(['gateways:' + gateway.name, 'routes:' + route.name, 'route', 'metrics:rate'], response.rate);
+            publish(['gateways:' + gateway.name, 'routes:' + route.name, 'route', 'metrics:responseTime'], response.average);
+        });
+    });
+});

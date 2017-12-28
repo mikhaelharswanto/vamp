@@ -66,6 +66,16 @@ class WorkflowReaderSpec extends FlatSpec with Matchers with ReaderSpec {
     )
   }
 
+  it should "read the workflow environment variables" in {
+    WorkflowReader.read(res("workflow/workflow7.yml")) should have(
+      'name("logger"),
+      'script(None),
+      'containerImage(None),
+      'command(Option("bash -c echo 5")),
+      'environmentVariables(Option(Map("KEY" -> "value")))
+    )
+  }
+
   "ScheduledWorkflowReader" should "read the scheduled workflow with time trigger" in {
     ScheduledWorkflowReader.read(res("workflow/scheduled1.yml")) should have(
       'name("logger-schedule"),
@@ -134,7 +144,7 @@ class WorkflowReaderSpec extends FlatSpec with Matchers with ReaderSpec {
   it should "read anonymous workflow specified with 'script'" in {
     ScheduledWorkflowReader.read(res("workflow/scheduled9.yml")) should have(
       'name("kill-vamp"),
-      'workflow(DefaultWorkflow("", None, Option("vamp.exit()"), None)),
+      'workflow(DefaultWorkflow("", None, Option("vamp.exit()"), None, None)),
       'trigger(TimeTrigger("P1Y2M3DT4H5M6S")),
       'scale(None)
     )
@@ -143,7 +153,7 @@ class WorkflowReaderSpec extends FlatSpec with Matchers with ReaderSpec {
   it should "read start time" in {
     ScheduledWorkflowReader.read(res("workflow/scheduled10.yml")) should have(
       'name("kill-vamp"),
-      'workflow(DefaultWorkflow("", None, Option("vamp.exit()"), None)),
+      'workflow(DefaultWorkflow("", None, Option("vamp.exit()"), None, None)),
       'trigger(TimeTrigger("P1Y2M3DT4H5M6S", RepeatForever, Option(OffsetDateTime.parse("2007-12-03T08:15:30Z")))),
       'scale(None)
     )
@@ -152,7 +162,7 @@ class WorkflowReaderSpec extends FlatSpec with Matchers with ReaderSpec {
   it should "read repeat count'" in {
     ScheduledWorkflowReader.read(res("workflow/scheduled11.yml")) should have(
       'name("kill-vamp"),
-      'workflow(DefaultWorkflow("", None, Option("vamp.exit()"), None)),
+      'workflow(DefaultWorkflow("", None, Option("vamp.exit()"), None, None)),
       'trigger(TimeTrigger("P1Y2M3DT4H5M6S", 5, Option(OffsetDateTime.parse("2012-10-01T05:52Z")))),
       'scale(None)
     )

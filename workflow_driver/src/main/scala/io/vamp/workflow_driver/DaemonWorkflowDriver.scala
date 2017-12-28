@@ -54,6 +54,10 @@ abstract class DaemonWorkflowDriver(implicit override val actorRefFactory: Actor
     val workflow = scheduledWorkflow.workflow.asInstanceOf[DefaultWorkflow]
     val scale = scheduledWorkflow.scale.get.asInstanceOf[DefaultScale]
 
+    var environmentVariables = workflow.environmentVariables.getOrElse(Map())
+    environmentVariables += "VAMP_URL" -> WorkflowDriver.vampUrl
+    environmentVariables += "VAMP_KEY_VALUE_STORE_PATH" -> s"/vamp/scheduled-workflow/${workflow.name}/workflow"
+
     DockerApp(
       id = name(scheduledWorkflow),
       container = Option(
@@ -68,10 +72,7 @@ abstract class DaemonWorkflowDriver(implicit override val actorRefFactory: Actor
       instances = scale.instances,
       cpu = scale.cpu.value,
       memory = Math.round(scale.memory.value).toInt,
-      environmentVariables = Map(
-        "VAMP_URL" -> WorkflowDriver.vampUrl,
-        "VAMP_KEY_VALUE_STORE_ROOT_PATH" -> WorkflowDriver.pathToString(scheduledWorkflow)
-      ),
+      environmentVariables = environmentVariables,
       command = workflow.command.map(_.split(" ").toList).getOrElse(Nil),
       arguments = Nil,
       labels = Map("scheduled" -> scheduledWorkflow.name, "workflow" -> workflow.name),

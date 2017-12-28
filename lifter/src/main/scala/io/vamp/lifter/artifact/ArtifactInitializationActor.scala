@@ -79,7 +79,7 @@ class ArtifactInitializationActor extends ArtifactApiController with CommonSuppo
 
   private def create(`type`: String, fileName: String, name: String, source: String) = {
     if (`type` == "workflows" && fileName.endsWith(".js"))
-      actorFor[PersistenceActor] ? PersistenceActor.Update(DefaultWorkflow(name, None, Option(source), None), Some(source))
+      actorFor[PersistenceActor] ? PersistenceActor.Update(DefaultWorkflow(name, None, Option(source), None, None), Some(source))
     else if (`type` == "scheduled-workflows")
       actorFor[PersistenceActor] ? PersistenceActor.Update(ScheduledWorkflowReader.read(source), Some(source))
     else

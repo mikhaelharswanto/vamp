@@ -34,7 +34,7 @@ trait JavascriptWorkflowRoute {
     }
 
   private def create(name: String, source: String, validateOnly: Boolean)(implicit timeout: Timeout): Future[Any] = {
-    val artifact = DefaultWorkflow(name, None, Option(source), None)
+    val artifact = DefaultWorkflow(name, None, Option(source), None, None)
     if (validateOnly) Future(artifact) else actorFor[PersistenceActor] ? PersistenceActor.Update(artifact, Some(source))
   }
 }

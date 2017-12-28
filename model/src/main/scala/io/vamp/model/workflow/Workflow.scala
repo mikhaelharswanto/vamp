@@ -14,7 +14,8 @@ case class DefaultWorkflow(
   name: String,
   containerImage: Option[String],
   script: Option[String],
-  command: Option[String]) extends Workflow
+  command: Option[String],
+  environmentVariables: Option[Map[String, String]]) extends Workflow
 
 sealed trait Trigger
 
