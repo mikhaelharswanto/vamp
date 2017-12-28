@@ -83,7 +83,7 @@ class SlaActor extends SlaPulse with ArtifactPaginationSupport with EventPaginat
           })) map {
             case optionalResponseTimes ⇒
               val responseTimes = optionalResponseTimes.flatten
-              if (responseTimes.nonEmpty) {
+              if (responseTimes.nonEmpty && responseTimes.max > 0) {
                 val maxResponseTimes = responseTimes.max
                 log.debug(s"escalation max response time for ${deployment.name}/${cluster.name}: $maxResponseTimes.")
                 if (maxResponseTimes > sla.upper.toMillis)
