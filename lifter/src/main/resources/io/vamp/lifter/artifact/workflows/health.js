@@ -10,7 +10,7 @@ let window = 300; // seconds
 
 function health(lookupName, tags) {
     let errorCode = 500;
-    let term = {ft: lookupName};
+    let term = {ft: lookupName || 'na'};
     let range = {ST: {gte: errorCode}};
 
     return metrics.count(term, range, window).map(function (total) {

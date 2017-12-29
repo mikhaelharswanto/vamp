@@ -15,15 +15,19 @@ function publish(tags, metrics) {
 
 api.gateways().each(function (gateway) {
 
-    metrics.average({ft: gateway.lookup_name}, 'Tt', window).each(function (response) {
-        publish(['gateways:' + gateway.name, 'gateway', 'metrics:rate'], response.rate);
-        publish(['gateways:' + gateway.name, 'gateway', 'metrics:responseTime'], response.average);
-    });
+    if (gateway.lookup_name) {
+        metrics.average({ft: gateway.lookup_name}, 'Tt', window).each(function (response) {
+            publish(['gateways:' + gateway.name, 'gateway', 'metrics:rate'], response.rate);
+            publish(['gateways:' + gateway.name, 'gateway', 'metrics:responseTime'], response.average);
+        });
+    }
 
     api.namify(gateway.routes).each(function (route) {
-        metrics.average({ft: route.lookup_name}, 'Tt', window).each(function (response) {
-            publish(['gateways:' + gateway.name, 'routes:' + route.name, 'route', 'metrics:rate'], response.rate);
-            publish(['gateways:' + gateway.name, 'routes:' + route.name, 'route', 'metrics:responseTime'], response.average);
-        });
+        if (route.lookup_name) {
+            metrics.average({ft: route.lookup_name}, 'Tt', window).each(function (response) {
+                publish(['gateways:' + gateway.name, 'routes:' + route.name, 'route', 'metrics:rate'], response.rate);
+                publish(['gateways:' + gateway.name, 'routes:' + route.name, 'route', 'metrics:responseTime'], response.average);
+            });
+        }
     });
 });
