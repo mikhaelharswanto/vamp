@@ -67,8 +67,6 @@ class VgaMarathonSynchronizationActor extends VgaSynchronizationActor with Artif
         IoC.actorFor[ContainerDriverActor] ! DeployDockerApp(request(count), update = instances != 0, false)
       else if (count > 0)
         IoC.actorFor[ContainerDriverActor] ! ScaleDockerApp(request(count), true)
-      else
-        IoC.actorFor[ContainerDriverActor] ! UndeployDockerApp(id)
     }
   }
 
